@@ -58,12 +58,12 @@ function BootScreen({ api }) {
   const failed = api.status === 'error';
   return (
     <Screen>
-      <Title>Stato</Title>
+      <Title>{tr('Stato')}</Title>
       {failed
-        ? <ErrorBanner title="Server non raggiungibile" text={`TeslaMateAPI non risponde: ${api.error}. Controlla la connessione al server (VPN?).`} onRetry={api.refresh}/>
-        : <Card label="Connessione" style={{ alignItems: 'center', padding: '28px 18px', gap: 12 }}>
+        ? <ErrorBanner title={tr('Server non raggiungibile')} text={tr('TeslaMateAPI non risponde: {err}. Controlla la connessione al server (VPN?).', { err: api.error })} onRetry={api.refresh}/>
+        : <Card label={tr('Connessione')} style={{ alignItems: 'center', padding: '28px 18px', gap: 12 }}>
             <div className="tm-spin" style={{ width: 28, height: 28, borderRadius: 14, border: `3px solid ${t.track}`, borderTopColor: t.blue }}/>
-            <div style={{ fontSize: 15, color: t.sub }}>Connessione a TeslaMate…</div>
+            <div style={{ fontSize: 15, color: t.sub }}>{tr('Connessione a TeslaMate…')}</div>
           </Card>}
     </Screen>
   );

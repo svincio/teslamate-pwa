@@ -4,6 +4,7 @@
 !config.js
 !manifest.json
 !sw.js
+!i18n.jsx
 !api.jsx
 !app.jsx
 !ui/

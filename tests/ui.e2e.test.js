@@ -42,6 +42,23 @@ test('app boots to live data, no mock leftovers, no NaN/undefined', async () => 
   });
 });
 
+test('English UI when the browser is not Italian', async () => {
+  await withBrowser(async (page) => {
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.body.innerText.includes('Battery'), { timeout: 30000 });
+    await waitHistory(page);
+    assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
+    const seen = [];
+    for (const l of ['Trips', 'Charges', 'Statistics', 'More', 'Status']) { await tab(page, l); seen.push(await bodyText(page)); }
+    const text = seen.join('\n');
+    assert.match(text, /Odometer/);
+    assert.match(text, /Battery health/);
+    assert.ok(!/undefined|NaN|\{\w+\}/.test(text), 'no undefined/NaN/unfilled {placeholders}');
+    const italian = text.match(/\b(Viaggi|Ricariche|Batteria|Oggi|Ieri|Spesa|Autonomia|Durata|Mostra|Nessun[ao]?)\b/g);
+    assert.equal(italian, null, `Italian words left: ${italian}`);
+  }, { lang: 'en-US' });
+});
+
 test('bottom tab bar switches between the 5 screens', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);
@@ -217,7 +234,7 @@ test('reopening the app shows the cached data even if the API is unreachable', a
     await gotoAppReady(page);
     await waitHistory(page);
     await page.waitForFunction(() => {
-      try { return !!JSON.parse(localStorage.getItem('tm.pwa.cache.v2')).history; } catch { return false; }
+      try { return !!JSON.parse(localStorage.getItem('tm.pwa.cache.v2.it')).history; } catch { return false; }
     }, { timeout: 180000 });
     await page.setRequestInterception(true);
     page.on('request', (r) => (r.url().includes('/api/v1/') ? r.abort() : r.continue()));

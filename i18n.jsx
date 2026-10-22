@@ -1,0 +1,126 @@
+// ─────────────────────────────────────────────────────────────
+// UI language. config.js `lang`: 'auto' (default) | 'it' | 'en'.
+// auto = Italian when the browser is Italian, English otherwise.
+// The Italian text is the key: tr('Viaggi') → 'Trips'; a missing translation falls back to Italian.
+// Vars: tr('{n} viaggi', { n }) — an English entry can be [singular, plural], picked on n == 1.
+// ─────────────────────────────────────────────────────────────
+
+const TM_LANG = (() => {
+  const c = String((window.TMConfig && window.TMConfig.lang) || 'auto').toLowerCase();
+  if (c === 'it' || c === 'en') return c;
+  return /^it\b/i.test(navigator.language || '') ? 'it' : 'en';
+})();
+const TM_LOCALE = TM_LANG === 'it' ? 'it-IT' : 'en-GB';
+document.documentElement.lang = TM_LANG;
+
+const MESI = TM_LANG === 'it'
+  ? ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre']
+  : ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MESI3 = TM_LANG === 'it'
+  ? ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic']
+  : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const TM_EN = {
+  // Tabs, titles, navigation
+  'Stato': 'Status', 'Viaggi': 'Trips', 'Ricariche': 'Charges', 'Statistiche': 'Statistics', 'Altro': 'More',
+  'Navigazione principale': 'Main navigation', 'Torna a {label}': 'Back to {label}',
+  // Dates and periods
+  'Oggi': 'Today', 'Ieri': 'Yesterday', 'Oggi, {date}': 'Today, {date}', 'Ieri · {date}': 'Yesterday · {date}',
+  '{n} gg fa': '{n} days ago',
+  'Giorno': 'Day', 'Settimana': 'Week', 'Mese': 'Month', 'Anno': 'Year', 'Tutto': 'All',
+  'Tutto lo storico': 'All history', 'Questa settimana': 'This week', 'Settimana scorsa': 'Last week',
+  'Periodo': 'Period', 'Tipo di periodo': 'Period type', 'Periodo precedente': 'Previous period', 'Periodo successivo': 'Next period',
+  'da {n} min': 'for {n} min', 'da {n} h': 'for {n} h', 'da {n} giorni': 'for {n} days',
+  'agg. ora': 'updated now', 'agg. {n} min fa': 'updated {n} min ago', 'agg. {when}': 'updated {when}',
+  'Ultimi 12 mesi': 'Last 12 months',
+  // Common states
+  'Server non raggiungibile': 'Server unreachable',
+  'TeslaMateAPI non risponde: {err}. Controlla la connessione al server (VPN?).': 'TeslaMateAPI is not responding: {err}. Check the connection to the server (VPN?).',
+  'TeslaMateAPI non risponde. Mostro gli ultimi dati salvati, di {day} alle {time}.': 'TeslaMateAPI is not responding. Showing the last saved data, from {day} at {time}.',
+  'TeslaMateAPI non risponde ({err}).': 'TeslaMateAPI is not responding ({err}).',
+  'Connessione': 'Connection', 'Connessione a TeslaMate…': 'Connecting to TeslaMate…',
+  'Caricamento storico': 'Loading history', 'Carico lo storico…': 'Loading history…',
+  'Stato e ricarica in corso sono già aggiornati.': 'Status and current charge are already up to date.',
+  'Riprova': 'Retry', 'Nessun risultato': 'No results',
+  'Mappa a tutto schermo': 'Full-screen map', 'Chiudi mappa': 'Close map',
+  // Car status
+  'In viaggio': 'Driving', 'In carica': 'Charging', 'Offline': 'Offline', 'Parcheggiata': 'Parked',
+  'Casa': 'Home', 'Pubblico': 'Public',
+  // Status screen
+  'Auto': 'Car', 'Auto chiusa': 'Car locked', 'Auto aperta': 'Car unlocked',
+  'Sentinella attiva': 'Sentry mode on', 'Sentinella spenta': 'Sentry mode off',
+  'Batteria': 'Battery', 'Autonomia': 'Range', 'Odometro': 'Odometer',
+  'Temperature': 'Temperatures', 'Temperatura': 'Temperature', 'interna': 'inside', 'esterna': 'outside',
+  'installato il {date}': 'installed on {date}', 'Posizione': 'Location', 'Riepilogo del mese': 'Month summary',
+  'Statistiche ›': 'Statistics ›', '{n} viaggi': ['{n} trip', '{n} trips'], 'consumo medio': 'avg. consumption',
+  '{n} ricariche': ['{n} charge', '{n} charges'], 'costo': 'cost',
+  'Ricarica in corso': 'Charging', 'Auto collegata': 'Car plugged in', 'fine alle {time}': 'done at {time}',
+  'Collegata, non in carica': 'Plugged in, not charging', 'limite {n}%': 'limit {n}%',
+  'Potenza': 'Power', 'Aggiunti': 'Added', 'Corrente': 'Current',
+  // Statistics
+  'Distanza totale': 'Total distance', 'Energia caricata': 'Energy charged', 'Costo totale': 'Total cost',
+  'Consumo medio': 'Average consumption', 'Serie mensile': 'Monthly series', 'Metrica': 'Metric',
+  'Media/mese': 'Avg./month', 'Barre mensili': 'Monthly bars',
+  'Consumo vs temperatura': 'Consumption vs temperature', 'Consumo vs velocità': 'Consumption vs speed',
+  '{title}, punti per viaggio con linea di tendenza': '{title}, one dot per trip with trend line',
+  'Copertura dei dati': 'Data coverage', 'Copertura TeslaMate': 'TeslaMate coverage',
+  '{n} km tracciati': '{n} km tracked', '{n} km odometro': '{n} km odometer',
+  // Trips
+  'Viaggi non disponibili': 'Trips not available', 'Non riesco a scaricare questo periodo: {err}': 'Could not load this period: {err}',
+  'Riepilogo periodo': 'Period summary', 'viaggi': 'trips', 'Wh/km medi': 'avg. Wh/km',
+  'Nessun viaggio nel periodo': 'No trips in this period', 'I viaggi registrati da TeslaMate compariranno qui.': 'Trips recorded by TeslaMate will show up here.',
+  'Mostra altri ({n})': 'Show more ({n})', 'Mostra altre ({n})': 'Show more ({n})',
+  'inizio': 'start', 'fine': 'end', 'Viaggio non trovato': 'Trip not found',
+  'Velocità': 'Speed', 'Altitudine': 'Elevation', 'max {v} km/h': 'max {v} km/h',
+  'max {v} kW · rigenerazione sotto lo zero': 'max {v} kW · regen below zero',
+  'Percorso': 'Route', 'Traccia non disponibile: {err}': 'Route not available: {err}',
+  'Nessun punto GPS per questo viaggio': 'No GPS points for this trip', 'Carico il percorso…': 'Loading route…',
+  'Seleziona tratto': 'Select section', 'Tratto': 'Section', 'tratto': 'section', 'Tutto il viaggio': 'Whole trip',
+  'trascina i cursori': 'drag the handles', 'Tratto del viaggio': 'Trip section', 'Tratto selezionato': 'Selected section',
+  'Distanza': 'Distance', 'Durata': 'Duration', 'Media · max {v}': 'Avg. · max {v}', 'Energia': 'Energy',
+  'Consumo': 'Consumption', 'Dislivello': 'Elevation gain', 'Numeri del viaggio': 'Trip figures',
+  'Vel. media': 'Avg. speed', 'Esterna': 'Outside', '{title} nel tempo': '{title} over time',
+  // Charges
+  'Tutte': 'All', 'Casa · AC': 'Home · AC', 'Spesa': 'Spend', 'Mappa delle ricariche': 'Charging map',
+  'Tipo di ricarica': 'Charge type', 'Nessuna ricarica DC': 'No DC charges', 'Nessuna ricarica AC': 'No AC charges',
+  'Nessuna ricarica': 'No charges', 'nel periodo': 'in this period',
+  'Le ricariche a colonnine rapide e Supercharger compariranno qui.': 'Fast charger and Supercharger sessions will show up here.',
+  'Le ricariche registrate da TeslaMate compariranno qui.': 'Charges recorded by TeslaMate will show up here.',
+  'Mostra tutte le ricariche': 'Show all charges', 'Ricarica non trovata': 'Charge not found', 'Completata': 'Completed',
+  'Potenza media': 'Average power', 'Potenza media · max {v}': 'Average power · max {v}',
+  'Costo · {v} €/kWh': 'Cost · {v} €/kWh', 'Costo · prezzo non impostato': 'Cost · no price set',
+  'Autonomia aggiunta': 'Range added', 'Efficienza': 'Efficiency',
+  '{v} kWh nella batteria': '{v} kWh into the battery', '{v} kWh dalla rete': '{v} kWh from the grid',
+  'Curva di ricarica': 'Charging curve', '% batteria': '% battery',
+  'Potenza e livello batteria durante la ricarica': 'Power and battery level while charging',
+  'Curva non disponibile: {err}': 'Curve not available: {err}', 'Nessun dato di dettaglio': 'No detailed data',
+  'Carico la curva…': 'Loading curve…', 'Dati tecnici': 'Technical data', 'Tensione': 'Voltage',
+  'fase': 'phase', 'fasi': 'phases', 'Temperatura esterna': 'Outside temperature',
+  // More
+  'Connesso': 'Connected', 'Non raggiungibile': 'Unreachable', 'Aggiornamento…': 'Updating…',
+  'Salute batteria': 'Battery health', 'In attesa dei dati': 'Waiting for data', 'Luoghi frequenti': 'Frequent places',
+  '{n} luoghi': ['{n} place', '{n} places'], 'Aggiornamenti software': 'Software updates', 'Ultimo: {v}': 'Latest: {v}',
+  'Impostazioni': 'Settings', 'Connessione e app': 'Connection and app', 'Ultimo aggiornamento': 'Last update',
+  'Aggiorna ora': 'Refresh now', 'in corso…': 'in progress…', 'Aggiornamento automatico': 'Auto refresh',
+  'ogni {n} s': 'every {n} s', 'spento': 'off', 'Installazione': 'Installed', 'Sulla schermata Home': 'On the Home Screen',
+  'Nel browser': 'In the browser', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
+  "Indirizzo, autenticazione e auto si configurano in config.js sul server. Il tema segue l'impostazione dell'iPhone.":
+    'Server address, authentication, car and language are set in config.js on the server. The theme follows the system setting.',
+  'Nessun aggiornamento': 'No updates', 'Le versioni installate compariranno qui.': 'Installed versions will show up here.',
+  'Dedotti da viaggi e ricariche degli ultimi 12 mesi': 'Derived from trips and charges of the last 12 months',
+  'Luoghi': 'Places', '{n} visite': ['{n} visit', '{n} visits'], 'Nessun luogo': 'No places',
+  'I luoghi compariranno dopo i primi viaggi.': 'Places will show up after the first trips.',
+  'Capacità': 'Capacity', 'Autonomia massima': 'Maximum range', 'km al 100%': 'km at 100%',
+  'Stima da {n} ricariche · {km} km': 'Estimated from {n} charges · {km} km', 'Stato di salute': 'State of health',
+  'SoH stimato': 'Estimated SoH', '{v} kWh attuali': '{v} kWh now', '{v} kWh originali': '{v} kWh original',
+  'cicli equivalenti': 'equivalent cycles', 'ricariche DC': 'DC charges', 'autonomia max': 'max range',
+  '{title} in funzione dei km percorsi': '{title} by distance driven',
+};
+
+function tr(it, vars) {
+  let s = TM_LANG === 'it' ? it : (TM_EN[it] ?? it);
+  if (Array.isArray(s)) s = s[vars && vars.n == 1 ? 0 : 1]; // n may come preformatted ('1')
+  return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : s;
+}
+
+Object.assign(window, { TM_LANG, TM_LOCALE, MESI, MESI3, tr });

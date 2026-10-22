@@ -7,7 +7,7 @@ commands to the car.
 
 > Not affiliated with Tesla, Inc. or with the TeslaMate project.
 
-**Current limits:** the UI is in Italian only, units are km and €. English and unit settings are planned.
+**Languages:** English and Italian (follows the browser, or set `lang` in `config.js`). **Units:** km and € only for now.
 
 ## Requirements
 
@@ -63,6 +63,7 @@ Copy [`config.js`](config.js), edit it and mount it as shown above:
 | `carId` | `1` | TeslaMate car id |
 | `token` | `""` | TeslaMateAPI `API_TOKEN`. Not needed for read-only endpoints; it would be readable by anyone. |
 | `refreshSeconds` | `60` | Status polling interval while the app is open, `0` disables it |
+| `lang` | `"auto"` | `"auto"` (browser language), `"it"` or `"en"` |
 | `priceAcPerKwh`, `priceDcPerKwh` | `null` | €/kWh estimate when TeslaMate records no charge cost |
 
 Better: set the cost per kWh in TeslaMate's geofences, it is then used by Grafana too.
