@@ -6,14 +6,20 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = Number(process.env.PORT) || 8000;
-// Host of your teslamateapi (HTTPS), e.g. TM_API_HOST=teslamate.example.com
+// Host of your teslamateapi (HTTPS), e.g. TM_API_HOST=teslamate.example.com; TM_MOCK=1 serves invented data instead.
 const API_HOST = process.env.TM_API_HOST;
-if (!API_HOST) { console.error('Set TM_API_HOST to the host serving /api/v1 (teslamateapi).'); process.exit(1); }
+const mock = process.env.TM_MOCK ? require('./demo/mock-api') : null;
+if (!API_HOST && !mock) { console.error('Set TM_API_HOST to the host serving /api/v1 (teslamateapi), or TM_MOCK=1.'); process.exit(1); }
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.jsx': 'text/javascript',
   '.json': 'application/json', '.css': 'text/css', '.png': 'image/png' };
 
 http.createServer((req, res) => {
+  if (mock && req.url.startsWith('/api/v1/')) {
+    const body = mock.handle(req.url);
+    res.writeHead(body ? 200 : 404, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(body || { error: 'not found' }));
+  }
   if (req.url.startsWith('/api/v1/')) {
     const upstream = https.request(
       { hostname: API_HOST, path: req.url, method: req.method, headers: { ...req.headers, host: API_HOST } },
