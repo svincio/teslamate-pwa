@@ -1,0 +1,31 @@
+// ponytail: dev-only same-origin proxy, mirrors the prod nginx setup
+// (static files + /api/v1 -> remote teslamateapi), no deps, no CORS needed.
+const http = require('http');
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+const PORT = Number(process.env.PORT) || 8000;
+// Host of your teslamateapi (HTTPS), e.g. TM_API_HOST=teslamate.example.com
+const API_HOST = process.env.TM_API_HOST;
+if (!API_HOST) { console.error('Set TM_API_HOST to the host serving /api/v1 (teslamateapi).'); process.exit(1); }
+
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.jsx': 'text/javascript',
+  '.json': 'application/json', '.css': 'text/css', '.png': 'image/png' };
+
+http.createServer((req, res) => {
+  if (req.url.startsWith('/api/v1/')) {
+    const upstream = https.request(
+      { hostname: API_HOST, path: req.url, method: req.method, headers: { ...req.headers, host: API_HOST } },
+      (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); }
+    );
+    req.pipe(upstream);
+    return;
+  }
+  const file = path.join(__dirname, req.url === '/' ? '/pwa.html' : req.url);
+  fs.readFile(file, (err, data) => {
+    if (err) { res.writeHead(404); return res.end('Not found'); }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
+    res.end(data);
+  });
+}).listen(PORT, () => console.log(`http://localhost:${PORT}/pwa.html`));

@@ -1,0 +1,18 @@
+{
+  "name": "TeslaMate PWA",
+  "short_name": "TeslaMate",
+  "description": "Dashboard mobile per la tua installazione TeslaMate (basato su teslamateapi).",
+  "start_url": "./pwa.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#0B2A52",
+  "icons": [
+    { "src": "assets/icon-192.png",      "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png",      "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "it"
+}

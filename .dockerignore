@@ -1,0 +1,11 @@
+*
+!nginx.conf
+!pwa.html
+!config.js
+!manifest.json
+!sw.js
+!api.jsx
+!app.jsx
+!ui/
+!screens/
+!assets/
