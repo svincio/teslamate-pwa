@@ -1,8 +1,8 @@
 // Ricariche + dettaglio (spec: docs/design/screens/06-ricariche.html, 07-dettaglio-ricarica.html)
 
-const CHARGE_PERIODS = [...PERIOD_KINDS, { value: 'tutto', label: 'Tutto' }];
+const CHARGE_PERIODS = [...PERIOD_KINDS, { value: 'tutto', label: tr('Tutto') }];
 const CHARGE_TYPES = [
-  { value: 'all', label: 'Tutte' }, { value: 'ac', label: 'Casa · AC' }, { value: 'dc', label: 'DC · Supercharger' },
+  { value: 'all', label: tr('Tutte') }, { value: 'ac', label: tr('Casa · AC') }, { value: 'dc', label: 'DC · Supercharger' },
 ];
 const isDC = (c) => c.type !== 'home';
 
@@ -41,13 +41,13 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
 
   return (
     <Screen>
-      <Title>Ricariche</Title>
+      <Title>{tr('Ricariche')}</Title>
       <PeriodBar value={period} onChange={setPeriod} kinds={CHARGE_PERIODS}/>
       {loading ? <HistoryLoading/> : (
         <>
-          <Card label="Spesa" style={{ padding: '16px 18px' }}>
+          <Card label={tr('Spesa')} style={{ padding: '16px 18px' }}>
             <div>
-              <div style={{ fontSize: 13, color: t.sub }}>Spesa · {r.label} · {fmtN(inP.length)} ricariche</div>
+              <div style={{ fontSize: 13, color: t.sub }}>{tr('Spesa')} · {r.label} · {tr('{n} ricariche', { n: fmtN(inP.length) })}</div>
               <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: -0.5 }}>{fmtEur(total)} €</div>
             </div>
             <div aria-hidden="true" style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', gap: 2, background: t.track }}>
@@ -55,13 +55,13 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
               {acShare < 1 && <div style={{ flex: 1, background: t.orange }}/>}
             </div>
             <Grid cols={2} style={{ gap: 12 }}>
-              <Legend color={t.green} v={`${fmtEur(acCost)} €`} sub={`AC · Casa · ${fmtN(acKwh, acKwh < 10 ? 1 : 0)} kWh`}/>
+              <Legend color={t.green} v={`${fmtEur(acCost)} €`} sub={`AC · ${tr('Casa')} · ${fmtN(acKwh, acKwh < 10 ? 1 : 0)} kWh`}/>
               <Legend color={t.orange} v={`${fmtEur(dcCost)} €`} sub={`DC · Supercharger · ${fmtN(dcKwh, dcKwh < 10 ? 1 : 0)} kWh`}/>
             </Grid>
           </Card>
 
           {markers.length > 0 && (
-            <OsmMap label="Mappa delle ricariche" height={170} markers={markers} overlay={
+            <OsmMap label={tr('Mappa delle ricariche')} height={170} markers={markers} overlay={
               <div style={{ position: 'absolute', left: 12, bottom: 10, zIndex: 1000, padding: '6px 10px', borderRadius: 12, background: t.card, fontSize: 12, display: 'flex', gap: 10 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 4, background: t.green }}/>AC</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 4, background: t.orange }}/>DC</span>
@@ -69,18 +69,18 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
             }/>
           )}
 
-          <Chips label="Tipo di ricarica" options={CHARGE_TYPES} value={type} onChange={setType}/>
+          <Chips label={tr('Tipo di ricarica')} options={CHARGE_TYPES} value={type} onChange={setType}/>
 
           {!list.length && <Empty icon={ICONS.bolt}
-            title={`${type === 'dc' ? 'Nessuna ricarica DC' : type === 'ac' ? 'Nessuna ricarica AC' : 'Nessuna ricarica'}${period.kind === 'tutto' ? '' : ' nel periodo'}`}
-            text={type === 'dc' ? 'Le ricariche a colonnine rapide e Supercharger compariranno qui.' : 'Le ricariche registrate da TeslaMate compariranno qui.'}
-            action={type !== 'all' ? 'Mostra tutte le ricariche' : null} onAction={() => setType('all')}/>}
+            title={`${type === 'dc' ? tr('Nessuna ricarica DC') : type === 'ac' ? tr('Nessuna ricarica AC') : tr('Nessuna ricarica')}${period.kind === 'tutto' ? '' : ' ' + tr('nel periodo')}`}
+            text={type === 'dc' ? tr('Le ricariche a colonnine rapide e Supercharger compariranno qui.') : tr('Le ricariche registrate da TeslaMate compariranno qui.')}
+            action={type !== 'all' ? tr('Mostra tutte le ricariche') : null} onAction={() => setType('all')}/>}
 
           {list.slice(0, limit).map(c => <ChargeCard key={c.id} c={c} onClick={() => open({ type: 'charge', id: c.id })}/>)}
 
           {list.length > limit && (
             <button type="button" onClick={() => setLimit(limit + PAGE * 2)} style={{ font: 'inherit', minHeight: 44, color: t.blue, fontSize: 16, fontWeight: 600, background: t.card, border: 0, borderRadius: 14, cursor: 'pointer' }}>
-              Mostra altre ({fmtN(list.length - limit)})
+              {tr('Mostra altre ({n})', { n: fmtN(list.length - limit) })}
             </button>
           )}
         </>
@@ -135,7 +135,7 @@ function ChargeDetail({ id, onBack }) {
     loadChargeDetail(tmReadConfig().carId, id).then(setDet).catch(e => setErr(String(e.message || e)));
   }, [id]);
 
-  if (!c) return <Screen detail><BackLink label="Ricariche" onClick={onBack}/><Empty icon={ICONS.bolt} title="Ricarica non trovata" text=""/></Screen>;
+  if (!c) return <Screen detail><BackLink label={tr('Ricariche')} onClick={onBack}/><Empty icon={ICONS.bolt} title={tr('Ricarica non trovata')} text=""/></Screen>;
 
   const dc = isDC(c) || (det && det.fast);
   const fg = dc ? t.orange : t.green, bg = dc ? t.orangeBg : t.greenBg;
@@ -153,43 +153,43 @@ function ChargeDetail({ id, onBack }) {
 
   return (
     <Screen detail>
-      <BackLink label="Ricariche" onClick={onBack}/>
+      <BackLink label={tr('Ricariche')} onClick={onBack}/>
       <div style={{ padding: '0 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 10 }}>
         <div style={{ minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>{c.where}</h1>
           <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{dayLabel(c._date)} · {c.time} – {hhmm(c._end)}</div>
         </div>
-        <span style={{ padding: '5px 10px', borderRadius: 12, background: bg, color: fg, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>{dc ? 'DC' : 'AC'} · Completata</span>
+        <span style={{ padding: '5px 10px', borderRadius: 12, background: bg, color: fg, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>{dc ? 'DC' : 'AC'} · {tr('Completata')}</span>
       </div>
 
-      <Card label="Energia caricata">
+      <Card label={tr('Energia caricata')}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: fg }}>
           <span style={{ fontSize: 46, fontWeight: 700, letterSpacing: -1 }}>+{fmtN(c.kwh, 1)}</span><span style={{ fontSize: 18, fontWeight: 600 }}>kWh</span>
         </div>
         <SocBar mode="charge" from={c.from} to={c.to} accent={fg} height={10} big/>
         <Grid cols={2} style={{ gap: 14, borderTop: `0.5px solid ${t.line}`, paddingTop: 14 }}>
-          <Stat size={20} v={fmtMin(c.durMin)} label="Durata"/>
-          <Stat size={20} v={`${fmtN(avgKw, 1)} kW`} label={maxKw ? `Potenza media · max ${fmtN(maxKw, maxKw < 10 ? 1 : 0)}` : 'Potenza media'}/>
-          <Stat size={20} v={`${fmtEur(c.cost)} €`} label={c.pricePerKwh ? `Costo · ${fmtN(c.pricePerKwh, 2)} €/kWh` : 'Costo · prezzo non impostato'}/>
-          <Stat size={20} v={`+${fmtN(c.rangeAdded)} km`} label="Autonomia aggiunta"/>
+          <Stat size={20} v={fmtMin(c.durMin)} label={tr('Durata')}/>
+          <Stat size={20} v={`${fmtN(avgKw, 1)} kW`} label={maxKw ? tr('Potenza media · max {v}', { v: fmtN(maxKw, maxKw < 10 ? 1 : 0) }) : tr('Potenza media')}/>
+          <Stat size={20} v={`${fmtEur(c.cost)} €`} label={c.pricePerKwh ? tr('Costo · {v} €/kWh', { v: fmtN(c.pricePerKwh, 2) }) : tr('Costo · prezzo non impostato')}/>
+          <Stat size={20} v={`+${fmtN(c.rangeAdded)} km`} label={tr('Autonomia aggiunta')}/>
         </Grid>
       </Card>
 
       {eff && (
-        <Card label="Efficienza" style={{ padding: '16px 18px', gap: 10 }}>
-          <CardHead title="Efficienza" right={<span style={{ fontSize: 26, fontWeight: 700 }}>{fmtN(Math.min(eff, 100), 1)}%</span>}/>
+        <Card label={tr('Efficienza')} style={{ padding: '16px 18px', gap: 10 }}>
+          <CardHead title={tr('Efficienza')} right={<span style={{ fontSize: 26, fontWeight: 700 }}>{fmtN(Math.min(eff, 100), 1)}%</span>}/>
           <Bar pct={eff} color={t.green}/>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: t.sub }}>
-            <span>{fmtN(c.kwh, 1)} kWh nella batteria</span><span>{fmtN(c.kwhUsed, 1)} kWh dalla rete</span>
+            <span>{tr('{v} kWh nella batteria', { v: fmtN(c.kwh, 1) })}</span><span>{tr('{v} kWh dalla rete', { v: fmtN(c.kwhUsed, 1) })}</span>
           </div>
         </Card>
       )}
 
-      <Card label="Curva di ricarica" style={{ padding: '14px 16px 12px', gap: 8 }}>
-        <CardHead title="Curva di ricarica" right={
+      <Card label={tr('Curva di ricarica')} style={{ padding: '14px 16px 12px', gap: 8 }}>
+        <CardHead title={tr('Curva di ricarica')} right={
           <div style={{ display: 'flex', gap: 12, fontSize: 12, color: t.sub }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: t.green }}/>kW</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: t.blue }}/>% batteria</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: t.blue }}/>{tr('% batteria')}</span>
           </div>}/>
         {pts.length > 1 ? (
           <>
@@ -198,7 +198,7 @@ function ChargeDetail({ id, onBack }) {
                 <span>{fmtN(kwTop)}</span><span>{fmtN(kwTop / 2, kwTop < 10 ? 1 : 0)}</span><span>0</span>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <LineChart height={150} label="Potenza e livello batteria durante la ricarica" series={[
+                <LineChart height={150} label={tr('Potenza e livello batteria durante la ricarica')} series={[
                   { vals: powers, color: t.green, min: 0, max: kwTop, area: true },
                   { vals: socs, color: t.blue, min: socMin, max: Math.max(socMax, socMin + 1), width: 2.4 },
                 ]}/>
@@ -209,13 +209,13 @@ function ChargeDetail({ id, onBack }) {
             </div>
             <AxisLabels items={times} style={{ padding: '0 32px 0 30px' }}/>
           </>
-        ) : <div style={{ fontSize: 14, color: err ? t.red : t.sub, padding: '20px 0' }}>{err ? `Curva non disponibile: ${err}` : det ? 'Nessun dato di dettaglio' : 'Carico la curva…'}</div>}
+        ) : <div style={{ fontSize: 14, color: err ? t.red : t.sub, padding: '20px 0' }}>{err ? tr('Curva non disponibile: {err}', { err }) : det ? tr('Nessun dato di dettaglio') : tr('Carico la curva…')}</div>}
       </Card>
 
-      <ListCard label="Dati tecnici">
-        <Row label="Tensione" value={volt ? `${fmtN(volt)} V` : '—'}/>
-        <Row label="Corrente" value={amp ? `${fmtN(amp)} A${phases ? ` · ${phases} ${phases > 1 ? 'fasi' : 'fase'}` : ''}` : '—'}/>
-        <Row label="Temperatura esterna" value={c.outsideTemp != null ? `${c.outsideTemp}°` : '—'} last/>
+      <ListCard label={tr('Dati tecnici')}>
+        <Row label={tr('Tensione')} value={volt ? `${fmtN(volt)} V` : '—'}/>
+        <Row label={tr('Corrente')} value={amp ? `${fmtN(amp)} A${phases ? ` · ${phases} ${phases > 1 ? tr('fasi') : tr('fase')}` : ''}` : '—'}/>
+        <Row label={tr('Temperatura esterna')} value={c.outsideTemp != null ? `${c.outsideTemp}°` : '—'} last/>
       </ListCard>
     </Screen>
   );

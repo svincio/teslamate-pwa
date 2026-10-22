@@ -35,6 +35,9 @@ window.TMConfig = {
   // Set to 0 to disable auto-refresh.
   refreshSeconds: 60,
 
+  // UI language: "auto" (Italian if the browser is Italian, English otherwise), "it" or "en".
+  lang: "auto",
+
 
   // Optional: €/kWh used to estimate charge cost when TeslaMate's own cost
   // tracking isn't configured (i.e. the API returns cost: 0). Leave null to

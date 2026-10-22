@@ -1,11 +1,12 @@
 // TeslaMate PWA — Service Worker
 // Stale-while-revalidate for shell, network-first w/ offline fallback for API.
 
-const CACHE = 'teslamate-pwa-v5';
+const CACHE = 'teslamate-pwa-v6';
 const SHELL = [
   './pwa.html',
   './manifest.json',
   './config.js',
+  './i18n.jsx',
   './api.jsx',
   './app.jsx',
   './ui/theme.jsx',

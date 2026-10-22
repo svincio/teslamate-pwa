@@ -2,12 +2,10 @@
 // Shared UI kit for the restyled screens (spec: docs/design/screens/*.html).
 // ─────────────────────────────────────────────────────────────
 
-// ─── Formatting (it-IT) ─────────────────────────────────────
-const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-const MESI3 = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+// ─── Formatting (locale and month names from i18n.jsx) ──────
 
 const fmtN = (v, dec = 0) => (Number.isFinite(v) ? v : 0)
-  .toLocaleString('it-IT', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  .toLocaleString(TM_LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
 const fmtEur = (v) => fmtN(v, 2);
 const fmtMin = (m) => {
   m = Math.round(m || 0);
@@ -22,29 +20,29 @@ function dayLabel(iso, withDate = true) {
   if (!iso) return '—';
   const d = new Date(iso), now = new Date(), y = new Date(); y.setDate(now.getDate() - 1);
   const date = `${d.getDate()} ${MESI[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : ''}`;
-  if (sameDay(d, now)) return withDate ? `Oggi, ${date}` : 'Oggi';
-  if (sameDay(d, y)) return withDate ? `Ieri · ${date}` : 'Ieri';
+  if (sameDay(d, now)) return withDate ? tr('Oggi, {date}', { date }) : tr('Oggi');
+  if (sameDay(d, y)) return withDate ? tr('Ieri · {date}', { date }) : tr('Ieri');
   return date;
 }
 // short: "Oggi" / "Ieri" / "12 ott" / "12 ott 2025" (year only when not the current one)
 function dayShort(iso) {
   if (!iso) return '—';
   const d = new Date(iso), now = new Date(), y = new Date(); y.setDate(now.getDate() - 1);
-  if (sameDay(d, now)) return 'Oggi';
-  if (sameDay(d, y)) return 'Ieri';
+  if (sameDay(d, now)) return tr('Oggi');
+  if (sameDay(d, y)) return tr('Ieri');
   return `${d.getDate()} ${MESI3[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : ''}`;
 }
 
 // ─── Calendar periods with ‹ › navigation (Viaggi, Ricariche) ─
 // A period is { kind, off }: off 0 = the current one, -1 = the previous, ...
 const PERIOD_KINDS = [
-  { value: 'giorno', label: 'Giorno' }, { value: 'settimana', label: 'Settimana' },
-  { value: 'mese', label: 'Mese' }, { value: 'anno', label: 'Anno' },
+  { value: 'giorno', label: tr('Giorno') }, { value: 'settimana', label: tr('Settimana') },
+  { value: 'mese', label: tr('Mese') }, { value: 'anno', label: tr('Anno') },
 ];
 // → { from, to (exclusive), label }
 function periodRange({ kind, off = 0 }, now = new Date()) {
   const Y = now.getFullYear(), M = now.getMonth(), D = now.getDate();
-  if (kind === 'tutto') return { from: new Date(0), to: new Date(8.64e15), label: 'Tutto lo storico' };
+  if (kind === 'tutto') return { from: new Date(0), to: new Date(8.64e15), label: tr('Tutto lo storico') };
   if (kind === 'anno') return { from: new Date(Y + off, 0, 1), to: new Date(Y + off + 1, 0, 1), label: String(Y + off) };
   if (kind === 'mese') {
     const from = new Date(Y, M + off, 1);
@@ -56,7 +54,7 @@ function periodRange({ kind, off = 0 }, now = new Date()) {
     const to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 7);
     const last = new Date(to.getFullYear(), to.getMonth(), to.getDate() - 1);
     const yr = last.getFullYear() !== Y ? ` ${last.getFullYear()}` : '';
-    const label = off === 0 ? 'Questa settimana' : off === -1 ? 'Settimana scorsa'
+    const label = off === 0 ? tr('Questa settimana') : off === -1 ? tr('Settimana scorsa')
       : from.getMonth() === last.getMonth() ? `${from.getDate()}–${last.getDate()} ${MESI3[last.getMonth()]}${yr}`
       : `${from.getDate()} ${MESI3[from.getMonth()]} – ${last.getDate()} ${MESI3[last.getMonth()]}${yr}`;
     return { from, to, label };
@@ -72,15 +70,15 @@ function PeriodBar({ value, onChange, kinds = PERIOD_KINDS }) {
   const r = periodRange(value);
   const nav = value.kind !== 'tutto';
   const arrow = (dir, disabled) => (
-    <button type="button" aria-label={dir < 0 ? 'Periodo precedente' : 'Periodo successivo'} disabled={disabled}
+    <button type="button" aria-label={dir < 0 ? tr('Periodo precedente') : tr('Periodo successivo')} disabled={disabled}
       onClick={() => onChange({ ...value, off: value.off + dir })} style={{
         width: 44, height: 40, border: 0, borderRadius: 12, background: 'transparent', font: 'inherit', fontSize: 26, lineHeight: 1,
         color: disabled ? t.track : t.blue, cursor: disabled ? 'default' : 'pointer', padding: 0,
       }}>{dir < 0 ? '‹' : '›'}</button>
   );
   return (
-    <div role="group" aria-label="Periodo" style={{ display: 'flex', flexDirection: 'column', gap: 6, background: t.card, borderRadius: 18, padding: 8 }}>
-      <Seg small label="Tipo di periodo" options={kinds} value={value.kind} onChange={(kind) => onChange({ kind, off: 0 })}/>
+    <div role="group" aria-label={tr('Periodo')} style={{ display: 'flex', flexDirection: 'column', gap: 6, background: t.card, borderRadius: 18, padding: 8 }}>
+      <Seg small label={tr('Tipo di periodo')} options={kinds} value={value.kind} onChange={(kind) => onChange({ kind, off: 0 })}/>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         {nav ? arrow(-1, false) : <span style={{ width: 44 }}/>}
         <button type="button" data-period-label onClick={() => onChange({ ...value, off: 0 })} style={{
@@ -94,16 +92,16 @@ function PeriodBar({ value, onChange, kinds = PERIOD_KINDS }) {
 function sinceLabel(iso) {
   if (!iso) return '';
   const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (m < 60) return `da ${m} min`;
-  if (m < 48 * 60) return `da ${Math.round(m / 60)} h`;
-  return `da ${Math.round(m / 1440)} giorni`;
+  if (m < 60) return tr('da {n} min', { n: m });
+  if (m < 48 * 60) return tr('da {n} h', { n: Math.round(m / 60) });
+  return tr('da {n} giorni', { n: Math.round(m / 1440) });
 }
 function agoLabel(ts) {
   if (!ts) return '';
   const m = Math.round((Date.now() - ts) / 60000);
-  if (m < 1) return 'agg. ora';
-  if (m < 60) return `agg. ${m} min fa`;
-  return `agg. ${dayShort(new Date(ts).toISOString()).toLowerCase()} ${hhmm(new Date(ts).toISOString())}`;
+  if (m < 1) return tr('agg. ora');
+  if (m < 60) return tr('agg. {n} min fa', { n: m });
+  return tr('agg. {when}', { when: `${dayShort(new Date(ts).toISOString()).toLowerCase()} ${hhmm(new Date(ts).toISOString())}` });
 }
 
 // Least-squares line through {x,y} points → { slope, at(x) }
@@ -170,7 +168,7 @@ function CardHead({ title, note, right }) {
 function BackLink({ label, onClick }) {
   const t = useT();
   return (
-    <button type="button" onClick={onClick} aria-label={`Torna a ${label}`} style={{
+    <button type="button" onClick={onClick} aria-label={tr('Torna a {label}', { label })} style={{
       minHeight: 44, display: 'flex', alignItems: 'center', gap: 2, color: t.blue, background: 'none',
       border: 0, padding: 0, font: 'inherit', fontSize: 17, alignSelf: 'flex-start', cursor: 'pointer',
     }}>
@@ -455,7 +453,7 @@ function OsmMap({ height = 180, center, zoom = 14, markers, route, highlight, ov
       <div ref={box} className={t.dark ? 'tm-map-dark' : ''} style={{ position: 'absolute', inset: 0, background: t.inset }}/>
       {overlay}
       {!interactive && (
-        <button type="button" aria-label="Mappa a tutto schermo" data-map-expand onClick={() => setFull(true)} style={{ ...btn, top: 8, right: 8, width: 36, height: 36, borderRadius: 12 }}>
+        <button type="button" aria-label={tr('Mappa a tutto schermo')} data-map-expand onClick={() => setFull(true)} style={{ ...btn, top: 8, right: 8, width: 36, height: 36, borderRadius: 12 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
         </button>
       )}
@@ -464,7 +462,7 @@ function OsmMap({ height = 180, center, zoom = 14, markers, route, highlight, ov
         // Portal on <body>: above the tab bar and any detail screen, whatever stacking context the small map lives in.
         <div role="dialog" aria-label={label} style={{ position: 'fixed', inset: 0, zIndex: 500, background: t.bg }}>
           <OsmMap center={center} zoom={zoom} markers={markers} route={route} highlight={highlight} overlay={overlay} label={label} interactive fill/>
-          <button type="button" aria-label="Chiudi mappa" data-map-close onClick={() => setFull(false)} style={{ ...btn, top: 'calc(10px + env(safe-area-inset-top))', right: 12 }}>
+          <button type="button" aria-label={tr('Chiudi mappa')} data-map-close onClick={() => setFull(false)} style={{ ...btn, top: 'calc(10px + env(safe-area-inset-top))', right: 12 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
         </div>, document.body)}
@@ -477,12 +475,12 @@ function HistoryLoading() {
   const t = useT();
   return (
     <>
-      <Card label="Caricamento storico" style={{ padding: '16px 18px', gap: 10 }}>
-        <div style={{ fontSize: 15, fontWeight: 600 }}>Carico lo storico…</div>
+      <Card label={tr('Caricamento storico')} style={{ padding: '16px 18px', gap: 10 }}>
+        <div style={{ fontSize: 15, fontWeight: 600 }}>{tr('Carico lo storico…')}</div>
         <div aria-hidden="true" style={{ height: 6, borderRadius: 3, background: t.track, position: 'relative', overflow: 'hidden' }}>
           <div className="tm-indeterminate" style={{ position: 'absolute', top: 0, bottom: 0, width: '30%', borderRadius: 3, background: t.blue }}/>
         </div>
-        <div style={{ fontSize: 13, color: t.sub }}>Stato e ricarica in corso sono già aggiornati.</div>
+        <div style={{ fontSize: 13, color: t.sub }}>{tr('Stato e ricarica in corso sono già aggiornati.')}</div>
       </Card>
       <div className="tm-pulse" aria-hidden="true" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {[75, 60, 70].map((w, i) => (
@@ -511,7 +509,7 @@ function ErrorBanner({ title, text, onRetry }) {
       {onRetry && <button type="button" onClick={onRetry} style={{
         alignSelf: 'flex-start', minHeight: 44, padding: '0 18px', border: 0, borderRadius: 22,
         background: t.warn, color: '#FFFFFF', font: 'inherit', fontSize: 15, fontWeight: 600, cursor: 'pointer',
-      }}>Riprova</button>}
+      }}>{tr('Riprova')}</button>}
     </section>
   );
 }
@@ -519,7 +517,7 @@ function ErrorBanner({ title, text, onRetry }) {
 function Empty({ icon, title, text, action, onAction }) {
   const t = useT();
   return (
-    <section aria-label="Nessun risultato" style={{ marginTop: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 10, padding: '0 24px' }}>
+    <section aria-label={tr('Nessun risultato')} style={{ marginTop: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 10, padding: '0 24px' }}>
       <div style={{ width: 72, height: 72, borderRadius: 36, background: t.card, color: t.sub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true"><path d={icon}/></svg>
       </div>
@@ -546,17 +544,17 @@ const ICONS = {
 };
 
 const TABS = [
-  { id: 'status',  label: 'Stato',       d: ICONS.stato },
-  { id: 'drives',  label: 'Viaggi',      d: ICONS.car },
-  { id: 'charges', label: 'Ricariche',   d: ICONS.bolt },
-  { id: 'stats',   label: 'Statistiche', d: ICONS.stats },
-  { id: 'more',    label: 'Altro',       d: ICONS.more },
+  { id: 'status',  label: tr('Stato'),       d: ICONS.stato },
+  { id: 'drives',  label: tr('Viaggi'),      d: ICONS.car },
+  { id: 'charges', label: tr('Ricariche'),   d: ICONS.bolt },
+  { id: 'stats',   label: tr('Statistiche'), d: ICONS.stats },
+  { id: 'more',    label: tr('Altro'),       d: ICONS.more },
 ];
 
 function TabBar({ active, onChange }) {
   const t = useT();
   return (
-    <nav aria-label="Navigazione principale" style={{
+    <nav aria-label={tr('Navigazione principale')} style={{
       position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, background: t.bar,
       backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: `0.5px solid ${t.line}`,
       padding: '6px 4px calc(env(safe-area-inset-bottom, 0px) + 4px)',
@@ -580,7 +578,7 @@ function TabBar({ active, onChange }) {
 }
 
 Object.assign(window, {
-  MESI, MESI3, fmtN, fmtEur, fmtMin, hhmm, dayLabel, dayShort, sinceLabel, agoLabel, linFit,
+  fmtN, fmtEur, fmtMin, hhmm, dayLabel, dayShort, sinceLabel, agoLabel, linFit,
   PERIOD_KINDS, periodRange, inPeriod, PeriodBar,
   Screen, Title, Card, CardHead, BackLink, Stat, Grid, Divider, Seg, Chips, Bar, SocBar, Row, ListCard,
   SectionLabel, useWidth, LineChart, Scatter, AxisLabels, OsmMap, HistoryLoading, ErrorBanner, Empty,

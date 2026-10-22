@@ -33,24 +33,24 @@ function DrivesScreen({ api, open, period, setPeriod }) {
 
   const groups = [];
   for (const d of list.slice(0, limit)) {
-    const day = dayLabel(d._date, false) === 'Oggi' ? 'Oggi' : dayLabel(d._date);
+    const day = dayLabel(d._date, false) === tr('Oggi') ? tr('Oggi') : dayLabel(d._date);
     const g = groups[groups.length - 1];
     if (g && g.day === day) g.items.push(d); else groups.push({ day, items: [d] });
   }
 
   return (
     <Screen>
-      <Title>Viaggi</Title>
+      <Title>{tr('Viaggi')}</Title>
       <PeriodBar value={period} onChange={setPeriod}/>
-      {src && src.error && <ErrorBanner title="Viaggi non disponibili" text={`Non riesco a scaricare questo periodo: ${src.error}`} onRetry={() => { delete olderDrives[key]; bump(n => n + 1); }}/>}
+      {src && src.error && <ErrorBanner title={tr('Viaggi non disponibili')} text={tr('Non riesco a scaricare questo periodo: {err}', { err: src.error })} onRetry={() => { delete olderDrives[key]; bump(n => n + 1); }}/>}
       {loading ? <HistoryLoading/> : (
         <>
-          <Card label="Riepilogo periodo" style={{ padding: '16px 18px', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0 }}>
+          <Card label={tr('Riepilogo periodo')} style={{ padding: '16px 18px', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0 }}>
             <Stat size={26} v={fmtN(km)} label="km"/>
-            <Stat size={26} v={fmtN(list.length)} label="viaggi"/>
-            <Stat size={26} v={km ? fmtN((kwh * 1000) / km) : '—'} label="Wh/km medi"/>
+            <Stat size={26} v={fmtN(list.length)} label={tr('viaggi')}/>
+            <Stat size={26} v={km ? fmtN((kwh * 1000) / km) : '—'} label={tr('Wh/km medi')}/>
           </Card>
-          {!list.length && <Empty icon={ICONS.car} title="Nessun viaggio nel periodo" text="I viaggi registrati da TeslaMate compariranno qui."/>}
+          {!list.length && <Empty icon={ICONS.car} title={tr('Nessun viaggio nel periodo')} text={tr('I viaggi registrati da TeslaMate compariranno qui.')}/>}
           {groups.map(g => (
             <div key={g.day} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <h2 style={{ margin: '6px 4px 0', fontSize: 15, fontWeight: 600, color: t.sub }}>{g.day}</h2>
@@ -59,7 +59,7 @@ function DrivesScreen({ api, open, period, setPeriod }) {
           ))}
           {list.length > limit && (
             <button type="button" onClick={() => setLimit(limit + PAGE * 2)} style={{ font: 'inherit', minHeight: 44, color: t.blue, fontSize: 16, fontWeight: 600, background: t.card, border: 0, borderRadius: 14, cursor: 'pointer' }}>
-              Mostra altri ({fmtN(list.length - limit)})
+              {tr('Mostra altri ({n})', { n: fmtN(list.length - limit) })}
             </button>
           )}
         </>
@@ -132,8 +132,8 @@ function RangePick({ n, sel, onChange, label }) {
       <div style={{ position: 'absolute', left: 15, right: 15, top: 19, height: 6, borderRadius: 3, background: t.track }}>
         <div style={{ position: 'absolute', left: `${pct(a)}%`, width: `${pct(b) - pct(a)}%`, top: 0, bottom: 0, borderRadius: 3, background: t.blue }}/>
       </div>
-      <input type="range" className="tm-range" aria-label={`${label}: inizio`} min={0} max={n - 1} value={a} onChange={e => set(0, +e.target.value)} style={{ zIndex: a > n - 10 ? 3 : 2 }}/>
-      <input type="range" className="tm-range" aria-label={`${label}: fine`} min={0} max={n - 1} value={b} onChange={e => set(1, +e.target.value)} style={{ zIndex: 2 }}/>
+      <input type="range" className="tm-range" aria-label={`${label}: ${tr('inizio')}`} min={0} max={n - 1} value={a} onChange={e => set(0, +e.target.value)} style={{ zIndex: a > n - 10 ? 3 : 2 }}/>
+      <input type="range" className="tm-range" aria-label={`${label}: ${tr('fine')}`} min={0} max={n - 1} value={b} onChange={e => set(1, +e.target.value)} style={{ zIndex: 2 }}/>
     </div>
   );
 }
@@ -155,7 +155,7 @@ function DriveDetail({ id, onBack }) {
       .catch(e => setErr(String(e.message || e)));
   }, [id]);
 
-  if (!d) return <Screen detail><BackLink label="Viaggi" onClick={onBack}/><Empty icon={ICONS.car} title="Viaggio non trovato" text=""/></Screen>;
+  if (!d) return <Screen detail><BackLink label={tr('Viaggi')} onClick={onBack}/><Empty icon={ICONS.car} title={tr('Viaggio non trovato')} text=""/></Screen>;
 
   const n = trace ? trace.length : 0;
   const zoomed = !!sel && (sel[0] > 0 || sel[1] < n - 1);
@@ -166,9 +166,9 @@ function DriveDetail({ id, onBack }) {
   const speeds = pts.map(p => p.speed), powers = pts.map(p => p.power), elev = pts.map(p => p.elevation);
   const maxOf = (a) => a.length ? Math.max(...a) : 0, minOf = (a) => a.length ? Math.min(...a) : 0;
   const charts = pts.length > 1 ? [
-    { title: 'Velocità', note: `max ${fmtN(zoomed ? maxOf(part.map(p => p.speed)) : (d.speedMax || maxOf(speeds)))} km/h`, color: t.blue, vals: speeds, min: 0, max: Math.max(10, maxOf(speeds) * 1.15) },
-    { title: 'Potenza', note: `max ${fmtN(maxOf(powers))} kW · rigenerazione sotto lo zero`, color: t.orange, vals: powers, min: Math.min(0, minOf(powers)) * 1.1, max: Math.max(10, maxOf(powers) * 1.1), zero: true },
-    { title: 'Altitudine', note: `${fmtN(minOf(elev))}–${fmtN(maxOf(elev))} m`, color: t.purple, vals: elev, min: minOf(elev) - 5, max: maxOf(elev) + 5 },
+    { title: tr('Velocità'), note: tr('max {v} km/h', { v: fmtN(zoomed ? maxOf(part.map(p => p.speed)) : (d.speedMax || maxOf(speeds))) }), color: t.blue, vals: speeds, min: 0, max: Math.max(10, maxOf(speeds) * 1.15) },
+    { title: tr('Potenza'), note: tr('max {v} kW · rigenerazione sotto lo zero', { v: fmtN(maxOf(powers)) }), color: t.orange, vals: powers, min: Math.min(0, minOf(powers)) * 1.1, max: Math.max(10, maxOf(powers) * 1.1), zero: true },
+    { title: tr('Altitudine'), note: `${fmtN(minOf(elev))}–${fmtN(maxOf(elev))} m`, color: t.purple, vals: elev, min: minOf(elev) - 5, max: maxOf(elev) + 5 },
   ] : [];
   const route = trace && trace.map(p => [p.lat, p.lng]);
   const mapZoomed = mapSel && (mapSel[0] > 0 || mapSel[1] < n - 1);
@@ -176,24 +176,24 @@ function DriveDetail({ id, onBack }) {
 
   return (
     <Screen detail>
-      <BackLink label="Viaggi" onClick={onBack}/>
+      <BackLink label={tr('Viaggi')} onClick={onBack}/>
       <div style={{ padding: '0 4px' }}>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, lineHeight: 1.2 }}>{d.from} → {d.to}</h1>
         <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{dayLabel(d._date)} · {d.time} – {hhmm(d._end)}</div>
       </div>
 
       {trace && trace.length > 1
-        ? <OsmMap label="Percorso" height={200} route={route} highlight={mapZoomed ? route.slice(mapSel[0], mapSel[1] + 1) : null}/>
-        : <Card label="Percorso" style={{ height: 200, alignItems: 'center', justifyContent: 'center', color: err ? t.red : t.sub, fontSize: 14 }}>
-            {err ? `Traccia non disponibile: ${err}` : trace ? 'Nessun punto GPS per questo viaggio' : 'Carico il percorso…'}
+        ? <OsmMap label={tr('Percorso')} height={200} route={route} highlight={mapZoomed ? route.slice(mapSel[0], mapSel[1] + 1) : null}/>
+        : <Card label={tr('Percorso')} style={{ height: 200, alignItems: 'center', justifyContent: 'center', color: err ? t.red : t.sub, fontSize: 14 }}>
+            {err ? tr('Traccia non disponibile: {err}', { err }) : trace ? tr('Nessun punto GPS per questo viaggio') : tr('Carico il percorso…')}
           </Card>}
 
       {n > 2 && (
-        <Card label="Seleziona tratto" style={{ padding: '14px 16px 10px', gap: 6 }}>
-          <CardHead title="Tratto" right={zoomed
-            ? <button type="button" onClick={() => setSel(null)} style={{ font: 'inherit', fontSize: 15, fontWeight: 600, color: t.blue, background: 'none', border: 0, padding: '6px 0', cursor: 'pointer' }}>Tutto il viaggio</button>
-            : <span style={{ fontSize: 13, color: t.sub }}>trascina i cursori</span>}/>
-          <RangePick n={n} sel={s} onChange={setSel} label="Tratto del viaggio"/>
+        <Card label={tr('Seleziona tratto')} style={{ padding: '14px 16px 10px', gap: 6 }}>
+          <CardHead title={tr('Tratto')} right={zoomed
+            ? <button type="button" onClick={() => setSel(null)} style={{ font: 'inherit', fontSize: 15, fontWeight: 600, color: t.blue, background: 'none', border: 0, padding: '6px 0', cursor: 'pointer' }}>{tr('Tutto il viaggio')}</button>
+            : <span style={{ fontSize: 13, color: t.sub }}>{tr('trascina i cursori')}</span>}/>
+          <RangePick n={n} sel={s} onChange={setSel} label={tr('Tratto del viaggio')}/>
           <div data-section-times style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontVariantNumeric: 'tabular-nums', color: zoomed ? t.text : t.sub }}>
             <span>{hms(trace[s[0]].date)}</span><span>{hms(trace[s[1]].date)}</span>
           </div>
@@ -201,40 +201,40 @@ function DriveDetail({ id, onBack }) {
       )}
 
       {sec && (
-        <Card label="Tratto selezionato" data-section-stats style={{ padding: '16px 18px', gap: 0 }}>
+        <Card label={tr('Tratto selezionato')} data-section-stats style={{ padding: '16px 18px', gap: 0 }}>
           <Grid cols={3}>
-            <Stat v={fmtN(sec.km, sec.km < 10 ? 2 : 1)} unit="km" label="Distanza"/>
-            <Stat v={fmtMin(sec.min)} label="Durata"/>
-            <Stat v={fmtN(sec.avg)} unit="km/h" label={`Media · max ${fmtN(sec.vmax)}`}/>
-            <Stat v={fmtN(sec.kwh, 2)} unit="kWh" label="Energia"/>
-            <Stat v={sec.km > 0.05 ? fmtN(sec.whkm) : '—'} unit="Wh/km" label="Consumo"/>
-            <Stat v={`${sec.soc > 0 ? '−' : sec.soc < 0 ? '+' : ''}${fmtN(Math.abs(sec.soc))}%`} label="Batteria"/>
+            <Stat v={fmtN(sec.km, sec.km < 10 ? 2 : 1)} unit="km" label={tr('Distanza')}/>
+            <Stat v={fmtMin(sec.min)} label={tr('Durata')}/>
+            <Stat v={fmtN(sec.avg)} unit="km/h" label={tr('Media · max {v}', { v: fmtN(sec.vmax) })}/>
+            <Stat v={fmtN(sec.kwh, 2)} unit="kWh" label={tr('Energia')}/>
+            <Stat v={sec.km > 0.05 ? fmtN(sec.whkm) : '—'} unit="Wh/km" label={tr('Consumo')}/>
+            <Stat v={`${sec.soc > 0 ? '−' : sec.soc < 0 ? '+' : ''}${fmtN(Math.abs(sec.soc))}%`} label={tr('Batteria')}/>
           </Grid>
           <div style={{ display: 'flex', gap: 16, borderTop: `0.5px solid ${t.line}`, paddingTop: 12, marginTop: 14, fontSize: 14, color: t.sub }}>
-            <span>Dislivello <b style={{ color: t.text, fontWeight: 600 }}>+{fmtN(sec.up)} m</b> / <b style={{ color: t.text, fontWeight: 600 }}>−{fmtN(sec.down)} m</b></span>
+            <span>{tr('Dislivello')} <b style={{ color: t.text, fontWeight: 600 }}>+{fmtN(sec.up)} m</b> / <b style={{ color: t.text, fontWeight: 600 }}>−{fmtN(sec.down)} m</b></span>
           </div>
         </Card>
       )}
 
-      <Card label="Numeri del viaggio" style={{ padding: '16px 18px', gap: 0 }}>
+      <Card label={tr('Numeri del viaggio')} style={{ padding: '16px 18px', gap: 0 }}>
         <Grid cols={3}>
-          <Stat v={fmtN(d.distance || d.km, 1)} unit="km" label="Distanza"/>
-          <Stat v={fmtN(d.durMin)} unit="min" label="Durata"/>
-          <Stat v={fmtN(d.avgSpeed)} unit="km/h" label="Vel. media"/>
-          <Stat v={fmtN(d.kwh, 1)} unit="kWh" label="Energia"/>
-          <Stat v={d.eff ? fmtN(d.eff) : '—'} unit="Wh/km" label="Consumo"/>
-          <Stat v={d.outsideTemp != null ? `${d.outsideTemp}°` : '—'} label="Esterna"/>
+          <Stat v={fmtN(d.distance || d.km, 1)} unit="km" label={tr('Distanza')}/>
+          <Stat v={fmtN(d.durMin)} unit="min" label={tr('Durata')}/>
+          <Stat v={fmtN(d.avgSpeed)} unit="km/h" label={tr('Vel. media')}/>
+          <Stat v={fmtN(d.kwh, 1)} unit="kWh" label={tr('Energia')}/>
+          <Stat v={d.eff ? fmtN(d.eff) : '—'} unit="Wh/km" label={tr('Consumo')}/>
+          <Stat v={d.outsideTemp != null ? `${d.outsideTemp}°` : '—'} label={tr('Esterna')}/>
         </Grid>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderTop: `0.5px solid ${t.line}`, paddingTop: 14, marginTop: 16 }}>
-          <span style={{ fontSize: 14, color: t.sub }}>Batteria</span>
+          <span style={{ fontSize: 14, color: t.sub }}>{tr('Batteria')}</span>
           <div style={{ flex: 1 }}><SocBar from={d.socFrom} to={d.socTo} accent={t.orange} big/></div>
         </div>
       </Card>
 
       {charts.map(c => (
         <Card key={c.title} label={c.title} style={{ padding: '14px 16px 12px', gap: 8 }}>
-          <CardHead title={zoomed ? `${c.title} · tratto` : c.title} note={c.note}/>
-          <LineChart label={`${c.title} nel tempo`} zero={c.zero} series={[{ vals: c.vals, color: c.color, min: c.min, max: c.max, area: true }]}/>
+          <CardHead title={zoomed ? `${c.title} · ${tr('tratto')}` : c.title} note={c.note}/>
+          <LineChart label={tr('{title} nel tempo', { title: c.title })} zero={c.zero} series={[{ vals: c.vals, color: c.color, min: c.min, max: c.max, area: true }]}/>
           <AxisLabels items={times}/>
         </Card>
       ))}

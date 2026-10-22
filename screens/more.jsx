@@ -1,7 +1,7 @@
 // Altro + Salute batteria + Luoghi + Aggiornamenti
 // (spec: docs/design/screens/09-altro.html, 10-salute-batteria.html)
 
-const APP_VERSION = '0.6.0';
+const APP_VERSION = '0.7.0';
 const fmtDate = (iso) => { if (!iso) return '—'; const d = new Date(iso); return `${d.getDate()} ${MESI3[d.getMonth()]} ${d.getFullYear()}`; };
 
 function MoreScreen({ api, open }) {
@@ -11,37 +11,37 @@ function MoreScreen({ api, open }) {
   const geos = window.TM_GEOFENCES || [];
   const cfg = tmReadConfig();
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  const conn = api.status === 'live' ? ['Connesso', t.green] : api.status === 'error' ? ['Non raggiungibile', t.red] : ['Aggiornamento…', t.sub];
+  const conn = api.status === 'live' ? [tr('Connesso'), t.green] : api.status === 'error' ? [tr('Non raggiungibile'), t.red] : [tr('Aggiornamento…'), t.sub];
   const last = api.lastFetch ? `${dayShort(new Date(api.lastFetch).toISOString()).toLowerCase()}, ${hhmm(new Date(api.lastFetch).toISOString())}` : '—';
 
   return (
     <Screen>
-      <Title>Altro</Title>
+      <Title>{tr('Altro')}</Title>
 
-      <SectionLabel>Auto</SectionLabel>
-      <ListCard label="Auto">
-        <Row label="Salute batteria" sub={st.soh ? `SoH ${fmtN(st.soh, 1)}% · ${fmtN(st.capacityKwh, 1)} kWh` : 'In attesa dei dati'} icon={ICONS.battery} iconBg={t.iconGreen} onClick={() => open({ type: 'health' })}/>
-        <Row label="Luoghi frequenti" sub={`${geos.length} luoghi`} icon={ICONS.pin} iconBg={t.iconRed} onClick={() => open({ type: 'places' })}/>
-        <Row label="Aggiornamenti software" sub={ups[0] ? `Ultimo: ${ups[0].version}` : '—'} icon={ICONS.download} iconBg={t.iconGray} onClick={() => open({ type: 'updates' })} last/>
+      <SectionLabel>{tr('Auto')}</SectionLabel>
+      <ListCard label={tr('Auto')}>
+        <Row label={tr('Salute batteria')} sub={st.soh ? `SoH ${fmtN(st.soh, 1)}% · ${fmtN(st.capacityKwh, 1)} kWh` : tr('In attesa dei dati')} icon={ICONS.battery} iconBg={t.iconGreen} onClick={() => open({ type: 'health' })}/>
+        <Row label={tr('Luoghi frequenti')} sub={tr('{n} luoghi', { n: geos.length })} icon={ICONS.pin} iconBg={t.iconRed} onClick={() => open({ type: 'places' })}/>
+        <Row label={tr('Aggiornamenti software')} sub={ups[0] ? tr('Ultimo: {v}', { v: ups[0].version }) : '—'} icon={ICONS.download} iconBg={t.iconGray} onClick={() => open({ type: 'updates' })} last/>
       </ListCard>
 
       {ups.length > 0 && <>
-        <SectionLabel>Aggiornamenti software</SectionLabel>
+        <SectionLabel>{tr('Aggiornamenti software')}</SectionLabel>
         <UpdatesList items={ups.slice(0, 4)}/>
       </>}
 
-      <SectionLabel>Impostazioni</SectionLabel>
-      <ListCard label="Connessione e app">
+      <SectionLabel>{tr('Impostazioni')}</SectionLabel>
+      <ListCard label={tr('Connessione e app')}>
         <Row label="TeslaMateAPI" value={<span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: conn[1] }}><span style={{ width: 8, height: 8, borderRadius: 4, background: conn[1] }}/>{conn[0]}</span>}/>
-        <Row label="Ultimo aggiornamento" value={last}/>
-        <Row label="Aggiorna ora" value={api.status === 'loading' || api.historyStatus === 'loading' ? 'in corso…' : ''} valueColor={t.blue} onClick={api.refresh}/>
-        <Row label="Aggiornamento automatico" value={cfg.refreshSeconds > 0 ? `ogni ${cfg.refreshSeconds} s` : 'spento'}/>
-        <Row label="Installazione" value={standalone ? 'Sulla schermata Home' : 'Nel browser'}/>
-        <Row label="Versione app" value={APP_VERSION} last/>
+        <Row label={tr('Ultimo aggiornamento')} value={last}/>
+        <Row label={tr('Aggiorna ora')} value={api.status === 'loading' || api.historyStatus === 'loading' ? tr('in corso…') : ''} valueColor={t.blue} onClick={api.refresh}/>
+        <Row label={tr('Aggiornamento automatico')} value={cfg.refreshSeconds > 0 ? tr('ogni {n} s', { n: cfg.refreshSeconds }) : tr('spento')}/>
+        <Row label={tr('Installazione')} value={standalone ? tr('Sulla schermata Home') : tr('Nel browser')}/>
+        <Row label={tr('Versione app')} value={APP_VERSION} last/>
       </ListCard>
-      {(api.error || api.historyError) && <p style={{ margin: '4px 16px', fontSize: 13, color: t.red, wordBreak: 'break-word' }}>{[api.error, api.historyError && `Storico: ${api.historyError}`].filter(Boolean).join(' · ')}</p>}
+      {(api.error || api.historyError) && <p style={{ margin: '4px 16px', fontSize: 13, color: t.red, wordBreak: 'break-word' }}>{[api.error, api.historyError && tr('Storico: {err}', { err: api.historyError })].filter(Boolean).join(' · ')}</p>}
       <p style={{ margin: '4px 16px', fontSize: 13, lineHeight: 1.4, color: t.sub }}>
-        Indirizzo, autenticazione e auto si configurano in config.js sul server. Il tema segue l'impostazione dell'iPhone.
+        {tr("Indirizzo, autenticazione e auto si configurano in config.js sul server. Il tema segue l'impostazione dell'iPhone.")}
       </p>
     </Screen>
   );
@@ -50,7 +50,7 @@ function MoreScreen({ api, open }) {
 function UpdatesList({ items }) {
   const t = useT();
   return (
-    <ListCard label="Aggiornamenti software">
+    <ListCard label={tr('Aggiornamenti software')}>
       {items.map((u, i) => (
         <div key={u.version + i} style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 52, borderBottom: i < items.length - 1 ? `0.5px solid ${t.line}` : 'none' }}>
           <span style={{ width: 8, height: 8, borderRadius: 4, background: i === 0 ? t.green : t.line }}/>
@@ -66,9 +66,9 @@ function UpdatesDetail({ onBack }) {
   const ups = window.TM_UPDATES || [];
   return (
     <Screen detail>
-      <BackLink label="Altro" onClick={onBack}/>
-      <h1 style={{ margin: 0, padding: '0 4px', fontSize: 28, fontWeight: 700 }}>Aggiornamenti software</h1>
-      {ups.length ? <UpdatesList items={ups}/> : <Empty icon={ICONS.download} title="Nessun aggiornamento" text="Le versioni installate compariranno qui."/>}
+      <BackLink label={tr('Altro')} onClick={onBack}/>
+      <h1 style={{ margin: 0, padding: '0 4px', fontSize: 28, fontWeight: 700 }}>{tr('Aggiornamenti software')}</h1>
+      {ups.length ? <UpdatesList items={ups}/> : <Empty icon={ICONS.download} title={tr('Nessun aggiornamento')} text={tr('Le versioni installate compariranno qui.')}/>}
     </Screen>
   );
 }
@@ -78,16 +78,16 @@ function PlacesDetail({ onBack }) {
   const geos = window.TM_GEOFENCES || [];
   return (
     <Screen detail>
-      <BackLink label="Altro" onClick={onBack}/>
+      <BackLink label={tr('Altro')} onClick={onBack}/>
       <div style={{ padding: '0 4px' }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>Luoghi frequenti</h1>
-        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>Dedotti da viaggi e ricariche degli ultimi 12 mesi</div>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>{tr('Luoghi frequenti')}</h1>
+        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{tr('Dedotti da viaggi e ricariche degli ultimi 12 mesi')}</div>
       </div>
       {geos.length ? (
-        <ListCard label="Luoghi">
-          {geos.map((g, i) => <Row key={g.name} label={g.name} sub={`${fmtN(g.visits)} visite`} value={g.lastVisit} icon={ICONS.pin} iconBg={g.type === 'home' ? t.iconGreen : t.iconRed} last={i === geos.length - 1}/>)}
+        <ListCard label={tr('Luoghi')}>
+          {geos.map((g, i) => <Row key={g.name} label={g.name} sub={tr('{n} visite', { n: fmtN(g.visits) })} value={g.lastVisit} icon={ICONS.pin} iconBg={g.type === 'home' ? t.iconGreen : t.iconRed} last={i === geos.length - 1}/>)}
         </ListCard>
-      ) : <Empty icon={ICONS.pin} title="Nessun luogo" text="I luoghi compariranno dopo i primi viaggi."/>}
+      ) : <Empty icon={ICONS.pin} title={tr('Nessun luogo')} text={tr('I luoghi compariranno dopo i primi viaggi.')}/>}
     </Screen>
   );
 }
@@ -113,8 +113,8 @@ function HealthDetail({ onBack }) {
   const sohPct = st.soh || (st.capacityMaxKwh ? (st.capacityKwh / st.capacityMaxKwh) * 100 : 0);
 
   const charts = [
-    { title: 'Capacità', note: 'kWh', color: t.blue, pts: cap, key: 'kwh' },
-    { title: 'Autonomia massima', note: 'km al 100%', color: t.purple, pts: rng, key: 'range' },
+    { title: tr('Capacità'), note: 'kWh', color: t.blue, pts: cap, key: 'kwh' },
+    { title: tr('Autonomia massima'), note: tr('km al 100%'), color: t.purple, pts: rng, key: 'range' },
   ].filter(c => c.pts.length >= 5).map(c => {
     const ys = c.pts.map(p => p[c.key]).sort((a, b) => a - b);
     const q = (f) => ys[Math.floor(f * (ys.length - 1))];
@@ -124,15 +124,15 @@ function HealthDetail({ onBack }) {
 
   return (
     <Screen detail>
-      <BackLink label="Altro" onClick={onBack}/>
+      <BackLink label={tr('Altro')} onClick={onBack}/>
       <div style={{ padding: '0 4px' }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>Salute batteria</h1>
-        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>Stima da {fmtN(cap.length)} ricariche · {fmtN(car.odometer)} km</div>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>{tr('Salute batteria')}</h1>
+        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{tr('Stima da {n} ricariche · {km} km', { n: fmtN(cap.length), km: fmtN(car.odometer) })}</div>
       </div>
 
-      <Card label="Stato di salute">
+      <Card label={tr('Stato di salute')}>
         <div>
-          <div style={{ fontSize: 13, color: t.sub }}>SoH stimato</div>
+          <div style={{ fontSize: 13, color: t.sub }}>{tr('SoH stimato')}</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, color: t.green }}>
             <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1, lineHeight: 1.05 }}>{sohPct ? fmtN(sohPct, 1) : '—'}</span>
             <span style={{ fontSize: 22, fontWeight: 600 }}>%</span>
@@ -141,13 +141,13 @@ function HealthDetail({ onBack }) {
         <div>
           <Bar pct={sohPct} color={t.blue} height={10}/>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: t.sub, marginTop: 8 }}>
-            <span>{fmtN(st.capacityKwh, 1)} kWh attuali</span><span>{fmtN(st.capacityMaxKwh, 1)} kWh originali</span>
+            <span>{tr('{v} kWh attuali', { v: fmtN(st.capacityKwh, 1) })}</span><span>{tr('{v} kWh originali', { v: fmtN(st.capacityMaxKwh, 1) })}</span>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', borderTop: `0.5px solid ${t.line}`, paddingTop: 14 }}>
-          <Stat size={20} v={fmtN(st.cyclesEq)} label="cicli equivalenti"/>
-          <Stat size={20} v={`${fmtN(st.dcPercent)}%`} label="ricariche DC"/>
-          <Stat size={20} v={`${fmtN(st.rangeKm)} km`} label="autonomia max"/>
+          <Stat size={20} v={fmtN(st.cyclesEq)} label={tr('cicli equivalenti')}/>
+          <Stat size={20} v={`${fmtN(st.dcPercent)}%`} label={tr('ricariche DC')}/>
+          <Stat size={20} v={`${fmtN(st.rangeKm)} km`} label={tr('autonomia max')}/>
         </div>
       </Card>
 
@@ -156,7 +156,7 @@ function HealthDetail({ onBack }) {
           <CardHead title={c.title} note={c.note}/>
           <div style={{ display: 'flex', gap: 6 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <Scatter grid="lines" r={2.5} label={`${c.title} in funzione dei km percorsi`} pts={c.pts.map(p => ({ x: p.km, y: p[c.key] }))}
+              <Scatter grid="lines" r={2.5} label={tr('{title} in funzione dei km percorsi', { title: c.title })} pts={c.pts.map(p => ({ x: p.km, y: p[c.key] }))}
                 color={c.color} xMin={0} xMax={c.xMax} yMin={c.yMin} yMax={c.yMax} trend={c.trend} trendColor={c.color}/>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: 11, color: t.sub, height: 130 }}>

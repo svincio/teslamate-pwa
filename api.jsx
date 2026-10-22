@@ -89,10 +89,9 @@ const fmtDay = (iso) => {
   const sameDay = d.toDateString() === now.toDateString();
   const yest = new Date(now); yest.setDate(yest.getDate() - 1);
   const isYest = d.toDateString() === yest.toDateString();
-  if (sameDay) return 'Oggi';
-  if (isYest) return 'Ieri';
-  const mesi = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
-  return `${d.getDate()} ${mesi[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : ''}`;
+  if (sameDay) return tr('Oggi');
+  if (isYest) return tr('Ieri');
+  return `${d.getDate()} ${MESI3[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : ''}`;
 };
 
 const fmtTime = (iso) => {
@@ -177,9 +176,9 @@ function normalizeCar(carRaw, statusRaw, fallback) {
   const inMotion = shift === 'D' || shift === 'R' || safeNum(pick(drive, 'speed')) > 0;
   const tmState = String(pick(s, 'state') || '');   // online | asleep | charging | driving | offline | …
   const chargingNow = tmState === 'charging' || pick(charg, 'charging_state') === 'Charging';
-  const status  = inMotion || tmState === 'driving' ? 'In viaggio'
-                : chargingNow ? 'In carica'
-                : tmState === 'offline' ? 'Offline' : 'Parcheggiata';
+  const status  = inMotion || tmState === 'driving' ? tr('In viaggio')
+                : chargingNow ? tr('In carica')
+                : tmState === 'offline' ? tr('Offline') : tr('Parcheggiata');
 
   const geofenceName = pick(geo, 'geofence');
   const address      = pick(geo, 'address');
@@ -294,7 +293,7 @@ function normalizeCharges(chargeRows) {
     if (isSC) type = 'sc';
     else if (peakKw >= 22) type = 'dc';
 
-    const where = addr ? addr.split(',')[0] : (type === 'home' ? 'Casa' : 'Pubblico');
+    const where = addr ? addr.split(',')[0] : (type === 'home' ? tr('Casa') : tr('Pubblico'));
 
     // Fall back to an estimated cost (config price × kWh) only when TeslaMate's
     // own cost tracking reports 0 — never override a real recorded cost.
@@ -462,7 +461,6 @@ function compute14dBuckets(items, key) {
 function compute12mSeries(drives, charges) {
   const now = new Date();
   const buckets = [];
-  const mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
@@ -474,7 +472,7 @@ function compute12mSeries(drives, charges) {
     const cost = Math.round(ch.reduce((s, x) => s + x.cost, 0));
     const driveKwh = dr.reduce((s, x) => s + x.kwh, 0);
     const eff  = km ? Math.round((driveKwh * 1000) / km) : 0;
-    buckets.push({ label: mesi[d.getMonth()], km, kwh, cost, eff });
+    buckets.push({ label: MESI3[d.getMonth()], km, kwh, cost, eff });
   }
   return {
     labels: buckets.map(b => b.label),
@@ -519,9 +517,9 @@ function deriveGeofences(drives, charges, fallback) {
 function fmtRelativeDay(ts) {
   const now = Date.now();
   const days = Math.floor((now - ts) / 86400000);
-  if (days < 1) return 'Oggi';
-  if (days < 2) return 'Ieri';
-  if (days < 14) return `${days} gg fa`;
+  if (days < 1) return tr('Oggi');
+  if (days < 2) return tr('Ieri');
+  if (days < 14) return tr('{n} gg fa', { n: days });
   return fmtDay(new Date(ts).toISOString());
 }
 
@@ -610,7 +608,7 @@ function applyHistory(d) {
 // while fresh data loads. _raw is dropped (only used while building; keeps it < 1 MB).
 // shortcut: day labels ("Oggi"/"Ieri") and 14-day buckets are precomputed, so cached
 // ones can be off by a day until the refresh lands (seconds); fine unless offline for long.
-const TM_CACHE_KEY = 'tm.pwa.cache.v2'; // bump when the cached shape changes
+const TM_CACHE_KEY = `tm.pwa.cache.v2.${TM_LANG}`; // bump when the cached shape changes; per language (labels are precomputed)
 const stripRaw = (arr) => (arr || []).map(({ _raw, ...x }) => x);
 
 function tmReadCache() {

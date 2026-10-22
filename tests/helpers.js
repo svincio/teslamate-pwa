@@ -43,7 +43,8 @@ async function waitForServer(tries = 40) {
   throw new Error('local-server.js did not come up in time');
 }
 
-async function withBrowser(fn) {
+// The UI follows the browser language (config.js lang: "auto"): tests pin it, Italian by default.
+async function withBrowser(fn, { lang = 'it-IT' } = {}) {
   const browser = await puppeteer.launch({
     executablePath: findChrome(),
     headless: true,
@@ -51,6 +52,7 @@ async function withBrowser(fn) {
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 430, height: 900 });
+    await page.evaluateOnNewDocument((l) => Object.defineProperty(navigator, 'language', { get: () => l }), lang);
     return await fn(page);
   } finally {
     await browser.close();
@@ -73,5 +75,5 @@ async function clickText(page, label) {
   await new Promise(r => setTimeout(r, 250));
 }
 
-module.exports = { PORT, BASE_URL, startServer, withBrowser, clickText };
+module.exports = { PORT, BASE_URL, findChrome, startServer, withBrowser, clickText };
 

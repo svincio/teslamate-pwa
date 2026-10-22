@@ -7,7 +7,22 @@ commands to the car.
 
 > Not affiliated with Tesla, Inc. or with the TeslaMate project.
 
-**Current limits:** the UI is in Italian only, units are km and €. English and unit settings are planned.
+<p>
+  <img src="docs/screenshots/status.png" width="200" alt="Status">
+  <img src="docs/screenshots/trips.png" width="200" alt="Trips">
+  <img src="docs/screenshots/trip-detail.png" width="200" alt="Trip detail with route map">
+  <img src="docs/screenshots/charges.png" width="200" alt="Charges">
+</p>
+<p>
+  <img src="docs/screenshots/charge-detail.png" width="200" alt="Charging curve">
+  <img src="docs/screenshots/statistics.png" width="200" alt="Statistics">
+  <img src="docs/screenshots/battery-health.png" width="200" alt="Battery health">
+  <img src="docs/screenshots/status-dark.png" width="200" alt="Status, dark theme">
+</p>
+
+<sub>Screenshots taken with invented demo data.</sub>
+
+**Languages:** English and Italian (follows the browser, or set `lang` in `config.js`). **Units:** km and € only for now.
 
 ## Requirements
 
@@ -63,6 +78,7 @@ Copy [`config.js`](config.js), edit it and mount it as shown above:
 | `carId` | `1` | TeslaMate car id |
 | `token` | `""` | TeslaMateAPI `API_TOKEN`. Not needed for read-only endpoints; it would be readable by anyone. |
 | `refreshSeconds` | `60` | Status polling interval while the app is open, `0` disables it |
+| `lang` | `"auto"` | `"auto"` (browser language), `"it"` or `"en"` |
 | `priceAcPerKwh`, `priceDcPerKwh` | `null` | €/kWh estimate when TeslaMate records no charge cost |
 
 Better: set the cost per kWh in TeslaMate's geofences, it is then used by Grafana too.
@@ -85,12 +101,16 @@ TM_API_HOST=teslamate.example.com node local-server.js   # http://localhost:8000
 ```
 
 `local-server.js` serves the files and proxies `/api/v1` to your TeslaMateAPI over HTTPS.
+Without a TeslaMate at hand, `TM_MOCK=1 node local-server.js` serves invented data instead
+(Milan area, about two years of trips and charges, see `demo/mock-api.js`).
 
-End-to-end tests run a real Chrome against your real data (no mocks):
+End-to-end tests run a real Chrome (Google Chrome or Chromium installed) against your data or the demo data:
 
 ```bash
 npm install
-TM_API_HOST=teslamate.example.com npm test
+TM_API_HOST=teslamate.example.com npm test   # your TeslaMate
+TM_MOCK=1 npm test                           # demo data
+node demo/screenshots.js                     # regenerates docs/screenshots/
 ```
 
 When you add or rename app files, update the list in `sw.js` (and bump `CACHE`) and in the `Dockerfile`.
