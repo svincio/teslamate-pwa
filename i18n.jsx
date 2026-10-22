@@ -113,7 +113,7 @@ const TM_EN = {
   'Capacità': 'Capacity', 'Autonomia massima': 'Maximum range', 'km al 100%': 'km at 100%',
   'Stima da {n} ricariche · {km} km': 'Estimated from {n} charges · {km} km', 'Stato di salute': 'State of health',
   'SoH stimato': 'Estimated SoH', '{v} kWh attuali': '{v} kWh now', '{v} kWh originali': '{v} kWh original',
-  'cicli equivalenti': 'equivalent cycles', 'ricariche DC': 'DC charges', 'autonomia max': 'max range',
+  'cicli equivalenti': 'equiv. cycles', 'ricariche DC': 'DC charges', 'autonomia max': 'max range',
   '{title} in funzione dei km percorsi': '{title} by distance driven',
 };
 

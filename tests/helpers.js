@@ -75,5 +75,5 @@ async function clickText(page, label) {
   await new Promise(r => setTimeout(r, 250));
 }
 
-module.exports = { PORT, BASE_URL, startServer, withBrowser, clickText };
+module.exports = { PORT, BASE_URL, findChrome, startServer, withBrowser, clickText };
 
