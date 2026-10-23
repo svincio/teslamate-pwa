@@ -160,6 +160,19 @@ function tmUnits() {
 const TRIMS = { '74D': 'Long Range AWD', '74': 'Long Range', '62': 'Mid Range', '50': 'Standard Range',
   'P74D': 'Performance', '57': 'Standard Range', 'P50D': 'Performance' };
 
+// What is open, in words (car_status from teslamateapi); single doors when known, else just "doors".
+function openings(cs) {
+  const doors = [['driver_front_door_open', 'Porta anteriore conducente'], ['driver_rear_door_open', 'Porta posteriore conducente'],
+    ['passenger_front_door_open', 'Porta anteriore passeggero'], ['passenger_rear_door_open', 'Porta posteriore passeggero']]
+    .filter(([k]) => pick(cs, k) === true).map(([, l]) => tr(l));
+  return [
+    ...(doors.length ? doors : pick(cs, 'doors_open') === true ? [tr('Porte')] : []),
+    ...(pick(cs, 'windows_open') === true ? [tr('Finestrini')] : []),
+    ...(pick(cs, 'trunk_open') === true ? [tr('Bagagliaio')] : []),
+    ...(pick(cs, 'frunk_open') === true ? [tr('Bagagliaio anteriore')] : []),
+  ];
+}
+
 function normalizeCar(carRaw, statusRaw, fallback) {
   const carObj = pick(carRaw, 'car', 'cars.0') || carRaw || {};
   const s      = pick(statusRaw, 'status') || statusRaw || {};
@@ -216,6 +229,7 @@ function normalizeCar(carRaw, statusRaw, fallback) {
     vin,
     trim:        TRIMS[trim] || trim,
     locked:      !!pick(cstat, 'locked'),
+    open:        openings(cstat),
     stateSince:  pick(s, 'state_since') || null,
     lat:         safeNum(pick(geo, 'latitude', 'location.latitude')) || null,
     lng:         safeNum(pick(geo, 'longitude', 'location.longitude')) || null,

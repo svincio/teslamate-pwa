@@ -139,7 +139,9 @@ const TM_EN = {
   'Impostazioni': 'Settings', 'Connessione e app': 'Connection and app', 'Ultimo aggiornamento': 'Last update',
   'Aggiorna ora': 'Refresh now', 'in corso…': 'in progress…', 'Aggiornamento automatico': 'Auto refresh',
   'ogni {n} s': 'every {n} s', 'spento': 'off', 'Installazione': 'Installed', 'Sulla schermata Home': 'On the Home Screen',
-  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', 'Si applicano quando esci da Altro.': 'Applied when you leave More.', 'Auto da mostrare': 'Car shown', 'Predefinita': 'Default', "Formato dell'ora": 'Time format', 'Chiaro': 'Light', 'Scuro': 'Dark', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
+  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', 'Aperto': 'Open', 'Porte': 'Doors', 'Finestrini': 'Windows', 'Bagagliaio': 'Trunk', 'Bagagliaio anteriore': 'Frunk',
+  'Porta anteriore conducente': 'Driver front door', 'Porta posteriore conducente': 'Driver rear door',
+  'Porta anteriore passeggero': 'Passenger front door', 'Porta posteriore passeggero': 'Passenger rear door', 'Si applicano quando esci da Altro.': 'Applied when you leave More.', 'Auto da mostrare': 'Car shown', 'Predefinita': 'Default', "Formato dell'ora": 'Time format', 'Chiaro': 'Light', 'Scuro': 'Dark', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
   'Indirizzo e autenticazione si configurano in config.js sul server.': 'Server address and authentication are set in config.js on the server.',
   'Valgono solo su questo dispositivo. Auto: segue config.js sul server, se lo imposta, altrimenti il dispositivo.':
     'These apply to this device only. Auto: follows config.js on the server, if it sets one, otherwise the device.',

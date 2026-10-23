@@ -27,6 +27,7 @@ function StatusScreen({ api, go }) {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, opacity: stale ? 0.6 : 1 }}>
+        {(car.open || []).length > 0 && <ErrorBanner title={tr('Aperto')} text={car.open.join(', ')}/>}
         {ch && <ChargingCard car={car} ch={ch}/>}
 
         <Card label={tr('Auto')}>

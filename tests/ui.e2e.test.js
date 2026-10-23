@@ -38,6 +38,7 @@ test('app boots to live data, no mock leftovers, no NaN/undefined', async () => 
     assert.ok(!/[Dd]emo\b|\(mock\)/.test(text), 'no demo/mock wording');
     assert.ok(!/undefined|NaN/.test(text), 'no undefined/NaN leaking into rendered text');
     assert.equal(await page.$('select[aria-label="Auto da mostrare"]'), null, 'one car: no car switch');
+    if (process.env.TM_MOCK) assert.ok(!/Aperto/.test(text), 'nothing open on the demo car');
     assert.match(text, /\d{1,3}\s*%/, 'expected a battery percentage on the home screen');
     assert.ok(!/\b0\s*km\s*\n?\s*Autonomia/.test(text), 'range must not be 0 km');
   });
