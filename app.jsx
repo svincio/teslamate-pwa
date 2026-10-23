@@ -13,6 +13,16 @@ const TM_RESUME = (() => {
 function App() {
   const t = useSystemTheme();
   const layout = useLayout(); // phone / wide / desk (0.10: sidebar + layout a 3 fasce)
+  // iPhone, PWA installata: dopo una rotazione iOS lascia la pagina scrollata dell'altezza della barra di stato
+  // (scrollY 59) anche con overflow: hidden; gli elementi fixed si vedono al loro posto ma i tocchi arrivano
+  // spostati e i pulsanti non rispondono. Misurato con demo/touch-debug.html; scrollTo(0, 0) lo risolve.
+  React.useEffect(() => {
+    let h;
+    const on = () => { clearTimeout(h); h = setTimeout(() => window.scrollTo(0, 0), 500); }; // dopo che iOS ha finito di ruotare
+    window.addEventListener('resize', on);
+    window.addEventListener('orientationchange', on);
+    return () => { window.removeEventListener('resize', on); window.removeEventListener('orientationchange', on); clearTimeout(h); };
+  }, []);
   const api = useTeslaMate();
   const R = TM_RESUME;
   const [tab, setTab] = React.useState(R.tab || 'status');
@@ -57,7 +67,8 @@ function App() {
   }[detail.type];
 
   // Oltre il telefono il contenuto resta leggibile: centrato, con un tetto che cresce con lo schermo.
-  const Center = ({ children }) => layout === 'phone' ? children : (
+  // Funzione e non componente: un componente definito qui dentro cambierebbe a ogni render e rimonterebbe lo schermo.
+  const center = (children) => layout === 'phone' ? children : (
     <div style={{ maxWidth: layout === 'wide' ? 900 : 'none', margin: '0 auto', width: '100%' }}>{children}</div>
   );
 
@@ -66,13 +77,13 @@ function App() {
       <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
         {layout === 'desk' && <TabBar side active={tab} onChange={go}/>}
         <div ref={scroller} style={{ position: 'relative', flex: 1, minWidth: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: t.bg }}>
-          <Center>{screens[tab]}</Center>
+          {center(screens[tab])}
         </div>
       </div>
       {layout !== 'desk' && <TabBar active={tab} onChange={go}/>}
       {details && (
         <div key={`${detail.type}-${detail.id || ''}`} style={{ position: 'fixed', inset: 0, zIndex: 60, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: t.bg }}>
-          <Center>{details()}</Center>
+          {center(details())}
         </div>
       )}
     </TMTheme.Provider>

@@ -9,7 +9,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { BASE_URL, startServer, withBrowser } = require('./helpers');
 
-const PROBE = path.join(__dirname, '.sw-probe.txt'); // served by local-server.js as /tests/.sw-probe.txt
+const PROBE = path.join(process.env.ROOT ? path.resolve(process.env.ROOT) : path.join(__dirname, '..'), '.sw-probe.txt'); // served by local-server.js as /.sw-probe.txt
 let serverProcess;
 test.before(async () => { serverProcess = await startServer(); });
 test.after(() => { serverProcess?.kill(); fs.rmSync(PROBE, { force: true }); });
@@ -18,7 +18,7 @@ test('new version of a file is served at once; the saved copy when offline', asy
   await withBrowser(async (page) => {
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => navigator.serviceWorker.controller, { timeout: 30000 });
-    const get = () => page.evaluate(() => fetch('/tests/.sw-probe.txt').then(r => r.text()).catch(e => 'error: ' + e.message));
+    const get = () => page.evaluate(() => fetch('/.sw-probe.txt').then(r => r.text()).catch(e => 'error: ' + e.message));
 
     fs.writeFileSync(PROBE, 'v1');
     assert.equal(await get(), 'v1');

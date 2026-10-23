@@ -131,6 +131,7 @@ function build(now = Date.now(), seed = 42, odo0 = 24300) {
     if (R() < 0.03) { const x = drive(P.home, P.linate, at(day, 6, 30), false); drive(P.linate, P.home, x + 20 * 60000, false); }
     if (soc < 22) charge(P.scEast, at(day, 21, 30), 75, true);
     if (soc < 55 || (soc < 70 && R() < 0.3)) charge(P.home, at(day, 22, 30), 80, false);
+    soc = Math.max(5, soc - (0.5 + (Math.round(day / DAY) % 4) * 0.4)); // parked overnight: ~0.5-1.7 % lost (no RNG: keeps the other data the same)
   }
 
   const last = { odo, soc: 62, temp: tempAt(now), health: health(odo) };
