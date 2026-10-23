@@ -27,6 +27,7 @@ function StatusScreen({ api, go }) {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, opacity: stale ? 0.6 : 1 }}>
+        {(car.open || []).length > 0 && <ErrorBanner title={tr('Aperto')} text={car.open.join(', ')}/>}
         {ch && <ChargingCard car={car} ch={ch}/>}
 
         <Card label={tr('Auto')}>
@@ -67,8 +68,15 @@ function StatusScreen({ api, go }) {
             <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6, wordBreak: 'break-all' }}>{car.software || '—'}</div>
             {lastUpdate && lastUpdate.version === car.software && lastUpdate.date &&
               <div style={{ fontSize: 12, color: t.sub }}>{tr('installato il {date}', { date: `${new Date(lastUpdate.date).getDate()} ${MESI3[new Date(lastUpdate.date).getMonth()]}` })}</div>}
+            {car.update != null && (
+              <div style={{ alignSelf: 'flex-start', marginTop: 4, padding: '4px 9px', borderRadius: 10, background: t.blueBg, color: t.blue, fontSize: 12, fontWeight: 600 }}>
+                {tr('Disponibile')}{car.update ? ` ${car.update}` : ''}
+              </div>
+            )}
           </Card>
         </Grid>
+
+        {car.tyres && <TyresCard ty={car.tyres}/>}
 
         {car.lat && car.lng && (
           <OsmMap label={tr('Posizione')} height={180} zoom={15}
@@ -94,6 +102,23 @@ function StatusScreen({ api, go }) {
         </Card>
       </div>
     </Screen>
+  );
+}
+
+// Front row on top, as you look at the car from above; a soft warning turns the value orange.
+function TyresCard({ ty }) {
+  const t = useT();
+  const pos = { fl: 'Anteriore sinistra', fr: 'Anteriore destra', rl: 'Posteriore sinistra', rr: 'Posteriore destra' };
+  return (
+    <Card label={tr('Pneumatici')} style={{ padding: 16, gap: 10 }}>
+      <div style={{ fontSize: 13, color: t.sub, fontWeight: 600 }}>{tr('Pneumatici')}</div>
+      <Grid cols={2} style={{ gap: '12px 8px' }}>
+        {['fl', 'fr', 'rl', 'rr'].map(k => (
+          <Stat key={k} size={22} v={fmtN(ty[k].v, ty.unit === 'psi' ? 0 : 1)} unit={ty.unit} color={ty[k].warn ? t.orange : undefined}
+            label={ty[k].warn ? `${tr(pos[k])} · ${tr('controlla')}` : tr(pos[k])}/>
+        ))}
+      </Grid>
+    </Card>
   );
 }
 

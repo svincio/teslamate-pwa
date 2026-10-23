@@ -44,6 +44,14 @@
   .tm-range::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 30px; height: 30px; margin-top: 7px; border-radius: 15px;
     background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); cursor: grab; }
   .tm-range::-moz-range-thumb { pointer-events: auto; width: 30px; height: 30px; border-radius: 15px; background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.35); }
+  /* Single slider (text size): 36 px thumb for fingers, filled part up to --tm-fill */
+  .tm-slider { width: 100%; height: 44px; margin: 0; background: none; -webkit-appearance: none; appearance: none; display: block; }
+  .tm-slider::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--tm-on) var(--tm-fill), var(--tm-off) var(--tm-fill)); }
+  .tm-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 36px; height: 36px; margin-top: -15px; border-radius: 18px;
+    background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); cursor: grab; }
+  .tm-slider::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--tm-on) var(--tm-fill), var(--tm-off) var(--tm-fill)); }
+  .tm-slider::-moz-range-thumb { width: 36px; height: 36px; border-radius: 18px; background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.35); }
+  .tm-slider:disabled { opacity: 0.4; }
 </style>
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>

@@ -38,6 +38,7 @@ test('app boots to live data, no mock leftovers, no NaN/undefined', async () => 
     assert.ok(!/[Dd]emo\b|\(mock\)/.test(text), 'no demo/mock wording');
     assert.ok(!/undefined|NaN/.test(text), 'no undefined/NaN leaking into rendered text');
     assert.equal(await page.$('select[aria-label="Auto da mostrare"]'), null, 'one car: no car switch');
+    if (process.env.TM_MOCK) assert.ok(!/Aperto/.test(text), 'nothing open on the demo car');
     assert.match(text, /\d{1,3}\s*%/, 'expected a battery percentage on the home screen');
     assert.ok(!/\b0\s*km\s*\n?\s*Autonomia/.test(text), 'range must not be 0 km');
   });
@@ -318,6 +319,22 @@ test('several settings changed in Altro: one reload when leaving it, into the ch
   });
 });
 
+test('refresh: faster while charging or driving, and at once when the app comes back', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
+    const secs = (state) => page.evaluate((s) => { const c = window.TM_CAR, old = c.state, ch = c.charging;
+      c.state = s; c.charging = null; const n = tmRefreshSeconds(60); c.state = old; c.charging = ch; return n; }, state);
+    assert.equal(await secs('driving'), 15);
+    assert.equal(await secs('charging'), 15);
+    assert.equal(await secs('asleep'), 60);
+    let calls = 0;
+    page.on('request', (r) => { if (/\/cars\/\d+\/status/.test(r.url())) calls++; });
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await new Promise(r => setTimeout(r, 1500));
+    assert.ok(calls >= 1, 'status fetched when the app is visible again');
+  });
+});
+
 test('reopening the app shows the cached data even if the API is unreachable', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);
@@ -346,6 +363,54 @@ test('maps open full screen, interactive (drag/pinch), and close', async () => {
     assert.ok(!(await page.$('section:not([role=dialog] section) .leaflet-grab')), 'small maps stay static');
     await page.$eval('[data-map-close]', b => b.click());
     assert.equal(await page.$('[role=dialog]'), null);
+  });
+});
+
+test('text size slider: magnets every 50%, − / +, cap on narrow screens, Auto; maps still pan', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
+    await tab(page, 'Altro');
+    const slider = 'input[aria-label="Dimensione testo"]';
+    const zoom = () => page.evaluate(() => document.documentElement.style.zoom);
+    // drag to a value and lift the finger (input events, then pointerup)
+    const dragTo = async (n) => {
+      await page.$eval(slider, (el, x) => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, String(x));
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }, n);
+      await page.$eval(slider, (el) => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })));
+    };
+    assert.equal(await page.$eval(slider, el => el.disabled), true, 'Auto: slider off');
+    assert.equal(await page.$eval(slider, el => el.max), '215', '430 px wide: at most 215%');
+    await page.$$eval('[role=group][aria-label="Dimensione testo"] button', bs => bs.find(b => b.innerText.trim() === 'Manuale').click());
+    await dragTo(147);
+    assert.equal(await zoom(), '1.5', 'magnet at 150%, applied at once without leaving Altro');
+    await press(page, '+');
+    assert.equal(await zoom(), '1.51');
+    await dragTo(300);
+    assert.equal(await zoom(), '2.15', 'capped by the screen width');
+    await dragTo(130);
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('tm.pwa.prefs')).textSize), '130');
+    await tab(page, 'Stato');                                    // no reload needed: the size is already applied
+    assert.equal(await zoom(), '1.3');
+    const nav = await page.$eval('nav', n => [n.getBoundingClientRect().bottom, innerHeight]);
+    assert.ok(Math.abs(nav[0] - nav[1]) < 2, `tab bar still at the bottom (${nav})`);
+    await page.waitForSelector('[data-map-expand]', { timeout: 60000 });
+    await page.$eval('[data-map-expand]', b => b.click());
+    await page.waitForSelector('[role=dialog] .leaflet-container', { timeout: 10000 });
+    const r = await page.$eval('[role=dialog]', e => { const b = e.getBoundingClientRect(); return [b.width, b.height, innerWidth, innerHeight]; });
+    assert.ok(Math.abs(r[0] - r[2]) < 2 && Math.abs(r[1] - r[3]) < 2, `full-screen map fills the screen (${r})`);
+    const pane = () => page.$eval('[role=dialog] .leaflet-map-pane', p => new DOMMatrix(getComputedStyle(p).transform).m41);
+    const before = await pane();
+    const box = await page.$eval('[role=dialog] .leaflet-container', e => { const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+    await page.mouse.move(box[0], box[1]); await page.mouse.down();
+    await page.mouse.move(box[0] + 100, box[1], { steps: 10 }); await page.mouse.up();
+    const moved = (await pane()) - before;
+    assert.ok(moved > 50 && moved < 150, `map panned with the pointer (${moved} px)`);
+    await page.$eval('[data-map-close]', b => b.click());
+    await tab(page, 'Altro');
+    await page.$$eval('[role=group][aria-label="Dimensione testo"] button', bs => bs.find(b => b.innerText.trim() === 'Auto').click());
+    assert.equal(await zoom(), '', 'Auto: back to 100% on a non-Apple browser');
   });
 });
 

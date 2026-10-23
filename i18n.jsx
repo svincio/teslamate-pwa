@@ -5,7 +5,7 @@
 // Vars: tr('{n} viaggi', { n }) — an English entry can be [singular, plural], picked on n == 1.
 // ─────────────────────────────────────────────────────────────
 
-// Per-device settings, kept in localStorage: { lang?, numbers?, clock?, theme?, car? }. Missing or 'auto' = not chosen here.
+// Per-device settings, kept in localStorage: { lang?, numbers?, clock?, theme?, textSize?, car? }. Missing or 'auto' = not chosen here.
 const TM_PREFS_KEY = 'tm.pwa.prefs';
 const tmPrefsNow = () => { try { return JSON.parse(localStorage.getItem(TM_PREFS_KEY)) || {}; } catch { return {}; } };
 const TM_PREFS = tmPrefsNow(); // as at start-up: what this run of the app uses
@@ -139,7 +139,10 @@ const TM_EN = {
   'Impostazioni': 'Settings', 'Connessione e app': 'Connection and app', 'Ultimo aggiornamento': 'Last update',
   'Aggiorna ora': 'Refresh now', 'in corso…': 'in progress…', 'Aggiornamento automatico': 'Auto refresh',
   'ogni {n} s': 'every {n} s', 'spento': 'off', 'Installazione': 'Installed', 'Sulla schermata Home': 'On the Home Screen',
-  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', 'Si applicano quando esci da Altro.': 'Applied when you leave More.', 'Auto da mostrare': 'Car shown', 'Predefinita': 'Default', "Formato dell'ora": 'Time format', 'Chiaro': 'Light', 'Scuro': 'Dark', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
+  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', 'Manuale': 'Manual', 'Riduci': 'Smaller', 'Aumenta': 'Larger', 'Scelto {n}%: su questo schermo al massimo {m}%.': 'Chosen {n}%: at most {m}% on this screen.', 'Dimensione testo': 'Text size', '{n} s in viaggio o in carica': '{n} s while driving or charging', 'Disponibile': 'Available', 'Pneumatici': 'Tyres', 'controlla': 'check', 'Anteriore sinistra': 'Front left', 'Anteriore destra': 'Front right',
+  'Posteriore sinistra': 'Rear left', 'Posteriore destra': 'Rear right', 'Aperto': 'Open', 'Porte': 'Doors', 'Finestrini': 'Windows', 'Bagagliaio': 'Trunk', 'Bagagliaio anteriore': 'Frunk',
+  'Porta anteriore conducente': 'Driver front door', 'Porta posteriore conducente': 'Driver rear door',
+  'Porta anteriore passeggero': 'Passenger front door', 'Porta posteriore passeggero': 'Passenger rear door', 'Si applicano quando esci da Altro.': 'Applied when you leave More.', 'Auto da mostrare': 'Car shown', 'Predefinita': 'Default', "Formato dell'ora": 'Time format', 'Chiaro': 'Light', 'Scuro': 'Dark', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
   'Indirizzo e autenticazione si configurano in config.js sul server.': 'Server address and authentication are set in config.js on the server.',
   'Valgono solo su questo dispositivo. Auto: segue config.js sul server, se lo imposta, altrimenti il dispositivo.':
     'These apply to this device only. Auto: follows config.js on the server, if it sets one, otherwise the device.',
@@ -160,4 +163,4 @@ function tr(it, vars) {
   return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : s;
 }
 
-Object.assign(window, { TM_PREFS, tmSetPref, tmChoice, TM_LANG, TM_LOCALE, TM_NUM_LOCALE, TM_H12, fmtClock, MESI, MESI3, tr });
+Object.assign(window, { TM_PREFS, tmPrefsNow, tmSetPref, tmChoice, TM_LANG, TM_LOCALE, TM_NUM_LOCALE, TM_H12, fmtClock, MESI, MESI3, tr });
