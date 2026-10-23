@@ -260,6 +260,39 @@ test('opening a charge loads its charge curve', async () => {
   });
 });
 
+test('desktop: sidebar and master-detail navigation for drives and charges', async () => {
+  await withBrowser(async (page) => {
+    await page.setViewport({ width: 1440, height: 900 });
+    await gotoAppReady(page);
+    await waitHistory(page);
+    assert.equal(await page.$eval('nav', n => n.style.width), '230px');
+
+    await tab(page, 'Viaggi');
+    await page.waitForSelector('[data-drive-id]');
+    const driveCount = await page.$$eval('[data-drive-id]', els => els.length);
+    assert.ok(driveCount > 1);
+    assert.equal(await page.$$eval('button[aria-label="Successivo"]', els => els.length), 1);
+    const before = await page.$$eval('h1', els => els.at(-1).innerText);
+    await page.locator('button[aria-label="Successivo"]').click();
+    await page.waitForFunction((old) => [...document.querySelectorAll('h1')].at(-1).innerText !== old, {}, before);
+
+    await tab(page, 'Ricariche');
+    await page.waitForSelector('[data-charge-id]');
+    assert.equal(await page.$$eval('button[aria-label="Successivo"]', els => els.length), 1);
+  });
+});
+
+test('large text collapses statistic grids to one column on a narrow screen', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
+    await page.evaluate(() => { localStorage.setItem('tm.pwa.prefs', JSON.stringify({ textSize: 300 })); location.reload(); });
+    await gotoAppReady(page);
+    await tab(page, 'Viaggi');
+    const columns = await page.$eval('section[aria-label="Riepilogo periodo"] > div', el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+    assert.equal(columns, 1);
+  });
+});
+
 test('theme follows the system setting (dark)', async () => {
   await withBrowser(async (page) => {
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
