@@ -192,7 +192,7 @@ function Card({ children, style, label, onClick, ...rest }) {
 function CardHead({ title, note, right }) {
   const t = useT();
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
       <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>{title}</h2>
       {right || <span style={{ fontSize: 13, color: t.sub, textAlign: 'right' }}>{note}</span>}
     </div>
@@ -345,7 +345,8 @@ function useWidth(initial = 326) {
   React.useLayoutEffect(() => {
     if (!ref.current) return;
     const el = ref.current;
-    const set = () => setW(Math.max(100, Math.floor(el.getBoundingClientRect().width)));
+    // clientWidth, not getBoundingClientRect: with the text-size zoom the latter is already scaled and charts overflowed
+    const set = () => setW(Math.max(100, Math.floor(el.clientWidth)));
     set();
     const ro = new ResizeObserver(set);
     ro.observe(el);

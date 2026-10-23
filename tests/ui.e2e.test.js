@@ -414,6 +414,29 @@ test('text size slider: magnets every 50%, − / +, cap on narrow screens, Auto;
   });
 });
 
+test('large text: no screen scrolls sideways (charts sized to their box)', async () => {
+  await withBrowser(async (page) => {
+    await page.setViewport({ width: 390, height: 900 });          // iPhone upright at the cap: 200 px of layout left
+    await page.evaluateOnNewDocument(() => localStorage.setItem('tm.pwa.prefs', '{"textSize":"300"}'));
+    await gotoAppReady(page);
+    await waitHistory(page);
+    // every scrolling layer must be as wide as it shows
+    const sideways = () => page.evaluate(() => [...document.querySelectorAll('div')]
+      .filter(d => getComputedStyle(d).overflowY === 'auto' && d.scrollWidth > d.clientWidth + 1).map(d => `${d.scrollWidth}>${d.clientWidth}`));
+    await tab(page, 'Statistiche');
+    assert.deepEqual(await sideways(), [], 'Statistiche');
+    await tab(page, 'Viaggi');
+    await page.$eval('[data-drive-id]', el => el.click());
+    await page.waitForSelector('svg[aria-label$="nel tempo"]', { timeout: 60000 });
+    assert.deepEqual(await sideways(), [], 'drive detail');
+    await page.evaluate(() => document.querySelector('button[aria-label^="Torna a"]').click());
+    await tab(page, 'Ricariche');
+    await page.$eval('[data-charge-id]', el => el.click());
+    await page.waitForSelector('svg[aria-label^="Potenza e livello batteria"]', { timeout: 60000 });
+    assert.deepEqual(await sideways(), [], 'charge detail');
+  });
+});
+
 test('drive section zoom: sliders pick a stretch, numbers and map follow', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);
