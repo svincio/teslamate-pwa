@@ -37,11 +37,11 @@ function hav(a, b) {
 const round = (v, d = 0) => Number(v.toFixed(d));
 const iso = (ms) => new Date(ms).toISOString();
 
-function build(now = Date.now()) {
-  const R = rng(42);
+function build(now = Date.now(), seed = 42, odo0 = 24300) {
+  const R = rng(seed);
   const today = new Date(now); today.setHours(0, 0, 0, 0);
   const start = today.getTime() - 850 * DAY; // ~28 months: periods older than 12 months are fetched on demand
-  let odo = 24300, soc = 78;
+  let odo = odo0, soc = 78;
   const drives = [], charges = [];
   const health = (km) => 1 - 0.045 * Math.min(1, (km - 20000) / 40000); // slow fade with distance
   const tempAt = (ms) => {
@@ -191,28 +191,37 @@ function curve(c) {
 }
 
 const strip = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith('_')));
-const CAR = { car_id: 1, car_name: 'Silver Arrow' };
+// TM_MOCK_CARS=2 adds a second, newer car (to try the car choice in Altro → Questo dispositivo).
+const CARS = [
+  { car_id: 1, name: 'Silver Arrow', model: '3', trim: '74D', vin: '5YJ3E7EB0LF000001', seed: 42, odo0: 24300, charging: true },
+  { car_id: 2, name: 'Red Comet', model: 'Y', trim: '74D', vin: '7SAYGDEE0PF000002', seed: 7, odo0: 3100, charging: false },
+];
 const UNITS = { unit_of_length: 'km', unit_of_temperature: 'C' };
-let DATA = null;
+const DATA = {};
 
 // → JSON-able response for /api/v1/... or null (404)
 function raw(url) {
-  if (!DATA || Date.now() - DATA.now > 6 * 3600000) DATA = build();
+  const cars = CARS.slice(0, Math.max(1, Math.min(CARS.length, Number(process.env.TM_MOCK_CARS) || 1)));
   const u = new URL(url, 'http://x');
-  const p = u.pathname.replace(/^\/api\/v1\//, '').replace(/\/$/, '');
-  const D = DATA, km = D.last.odo;
-  if (p === 'cars') return { data: { cars: [{ car_id: 1, name: CAR.car_name,
-    car_details: { eid: 1, vid: 1, vin: '5YJ3E7EB0LF000001', model: '3', trim_badging: '74D', efficiency: 0.153 } }] } };
+  const p0 = u.pathname.replace(/^\/api\/v1\//, '').replace(/\/$/, '');
+  if (p0 === 'cars') return { data: { cars: cars.map(c => ({ car_id: c.car_id, name: c.name,
+    car_details: { eid: c.car_id, vid: c.car_id, vin: c.vin, model: c.model, trim_badging: c.trim, efficiency: 0.153 } })) } };
+  const cm = p0.match(/^cars\/(\d+)(\/.*)$/);
+  const C = cm && cars.find(c => c.car_id === +cm[1]);
+  if (!C) return null;
+  const p = 'cars/1' + cm[2]; // same routes for every car
+  if (!DATA[C.car_id] || Date.now() - DATA[C.car_id].now > 6 * 3600000) DATA[C.car_id] = build(Date.now(), C.seed, C.odo0);
+  const D = DATA[C.car_id], km = D.last.odo, CAR = { car_id: C.car_id, car_name: C.name };
   if (p === 'cars/1/status') return { data: { car: CAR, units: UNITS, status: {
-    display_name: CAR.car_name, state: 'charging', state_since: iso(D.now - 47 * 60000), odometer: round(km, 1),
+    display_name: CAR.car_name, state: C.charging ? 'charging' : 'asleep', state_since: iso(D.now - 47 * 60000), odometer: round(km, 1),
     car_status: { healthy: true, locked: true, sentry_mode: false, windows_open: false, doors_open: false, trunk_open: false, frunk_open: false, is_user_present: false },
-    car_details: { model: '3', trim_badging: '74D' },
+    car_details: { model: C.model, trim_badging: C.trim },
     car_geodata: { geofence: 'Home', location: { latitude: P.home.lat, longitude: P.home.lng }, latitude: P.home.lat, longitude: P.home.lng },
     car_versions: { version: D.updates[0].version, update_available: false, update_version: '' },
     driving_details: { shift_state: '', power: 0, speed: 0, heading: 0, elevation: P.home.elev },
     climate_details: { is_climate_on: false, inside_temp: round(D.last.temp + 3, 1), outside_temp: round(D.last.temp, 1), is_preconditioning: false },
     battery_details: { est_battery_range: 0, rated_battery_range: round(D.last.soc * RANGE0 * D.last.health / 100, 1), ideal_battery_range: round(D.last.soc * RANGE0 * D.last.health / 100, 1), battery_level: D.last.soc, usable_battery_level: D.last.soc },
-    charging_details: { plugged_in: true, charging_state: 'Charging', charge_energy_added: 8.4, charge_limit_soc: 80, charge_port_door_open: true,
+    charging_details: { plugged_in: C.charging, charging_state: C.charging ? 'Charging' : 'Disconnected', charge_energy_added: 8.4, charge_limit_soc: 80, charge_port_door_open: true,
       charger_actual_current: 16, charger_phases: 3, charger_power: 11, charger_voltage: 230, time_to_full_charge: 1.25 },
   } } };
   if (p === 'cars/1/drives') {
