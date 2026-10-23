@@ -30,6 +30,22 @@ const TM_THEMES = {
   },
 };
 
+// Text size: device choice (%), else config.js `textSize`, else on iPhone/iPad the system text size
+// (Dynamic Type, 17 px = default). The whole app scales (CSS zoom), so icons and spacing keep their proportions.
+const TM_TEXT_SCALE = (() => {
+  const c = tmChoice('textSize', ['100', '115', '130', '150']);
+  if (c) return +c / 100;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!ios || !CSS.supports('font', '-apple-system-body')) return 1; // Mac: -apple-system-body is 13 px, not a choice
+  const el = document.createElement('span');
+  el.style.font = '-apple-system-body';
+  document.body.appendChild(el);
+  const px = parseFloat(getComputedStyle(el).fontSize);
+  el.remove();
+  return px ? Math.min(1.6, Math.max(0.85, px / 17)) : 1;
+})();
+if (TM_TEXT_SCALE !== 1) document.documentElement.style.zoom = String(TM_TEXT_SCALE);
+
 const TMTheme = React.createContext(TM_THEMES.light);
 const useT = () => React.useContext(TMTheme);
 
@@ -51,4 +67,4 @@ function useSystemTheme() {
   return t;
 }
 
-Object.assign(window, { TM_THEMES, TMTheme, useT, useSystemTheme });
+Object.assign(window, { TM_THEMES, TM_TEXT_SCALE, TMTheme, useT, useSystemTheme });

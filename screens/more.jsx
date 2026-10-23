@@ -1,7 +1,7 @@
 // Altro + Salute batteria + Luoghi + Aggiornamenti
 // (spec: docs/design/screens/09-altro.html, 10-salute-batteria.html)
 
-const APP_VERSION = '0.8.1';
+const APP_VERSION = '0.9.0';
 const fmtDate = (iso) => { if (!iso) return '—'; const d = new Date(iso); return `${d.getDate()} ${MESI3[d.getMonth()]} ${d.getFullYear()}`; };
 
 function MoreScreen({ api, open, pending, onPrefChange }) {
@@ -38,6 +38,8 @@ function MoreScreen({ api, open, pending, onPrefChange }) {
         <PrefRow onChange={onPrefChange} label={tr('Formato dei numeri')} pref="numbers" options={[{ value: 'auto', label: 'Auto' },
           { value: 'comma', label: '1.234,5' }, { value: 'dot', label: '1,234.5' }, { value: 'space', label: '1 234,5' }]}/>
         <PrefRow onChange={onPrefChange} label={tr("Formato dell'ora")} pref="clock" options={[{ value: 'auto', label: 'Auto' }, { value: '24', label: '24 h' }, { value: '12', label: '12 h' }]}/>
+        <PrefRow onChange={onPrefChange} label={tr('Dimensione testo')} pref="textSize" options={[{ value: 'auto', label: 'Auto' },
+          ...['100', '115', '130', '150'].map(v => ({ value: v, label: `${v}%` }))]}/>
         <PrefRow onChange={onPrefChange} label={tr('Tema')} pref="theme" options={[{ value: 'auto', label: 'Auto' }, { value: 'light', label: tr('Chiaro') }, { value: 'dark', label: tr('Scuro') }]} last/>
       </ListCard>
       <p style={{ margin: '4px 16px', fontSize: 13, lineHeight: 1.4, color: t.sub }}>
@@ -70,7 +72,7 @@ function PrefRow({ label, pref, options, last, onChange }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0', borderBottom: last ? 'none' : `0.5px solid ${t.line}` }}>
       <div style={{ fontSize: 16 }}>{label}</div>
-      {React.createElement(options.length > 4 ? Chips : Seg, { small: true, label, options, value, // many cars: chips wrap
+      {React.createElement(options.length > 5 ? Chips : Seg, { small: true, label, options, value, // many cars: chips wrap
         onChange: (v) => { tmSetPref(pref, v); setValue(v); onChange(); } })}
     </div>
   );

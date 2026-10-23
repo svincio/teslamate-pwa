@@ -366,6 +366,31 @@ test('maps open full screen, interactive (drag/pinch), and close', async () => {
   });
 });
 
+test('text size chosen on this device scales the app; maps still fill the screen and pan', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
+    await tab(page, 'Altro');
+    await press(page, '130%');
+    await leaveTo(page, 'Stato');
+    await page.waitForSelector('[data-map-expand]', { timeout: 60000 });
+    assert.equal(await page.evaluate(() => document.documentElement.style.zoom), '1.3');
+    const nav = await page.$eval('nav', n => [n.getBoundingClientRect().bottom, innerHeight]);
+    assert.ok(Math.abs(nav[0] - nav[1]) < 2, `tab bar still at the bottom (${nav})`);
+    await page.$eval('[data-map-expand]', b => b.click());
+    await page.waitForSelector('[role=dialog] .leaflet-container', { timeout: 10000 });
+    const r = await page.$eval('[role=dialog]', e => { const b = e.getBoundingClientRect(); return [b.width, b.height, innerWidth, innerHeight]; });
+    assert.ok(Math.abs(r[0] - r[2]) < 2 && Math.abs(r[1] - r[3]) < 2, `full-screen map fills the screen (${r})`);
+    // drag: the map must move by about the drag distance, not by a zoomed-off amount
+    const pane = () => page.$eval('[role=dialog] .leaflet-map-pane', p => new DOMMatrix(getComputedStyle(p).transform).m41);
+    const before = await pane();
+    const box = await page.$eval('[role=dialog] .leaflet-container', e => { const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+    await page.mouse.move(box[0], box[1]); await page.mouse.down();
+    await page.mouse.move(box[0] + 100, box[1], { steps: 10 }); await page.mouse.up();
+    const moved = (await pane()) - before;
+    assert.ok(moved > 50 && moved < 150, `map panned with the pointer (${moved} px)`);
+  });
+});
+
 test('drive section zoom: sliders pick a stretch, numbers and map follow', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);
