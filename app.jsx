@@ -3,19 +3,36 @@
 // Data lives in window.TM_* (api.jsx); every data update re-renders from here.
 // ─────────────────────────────────────────────────────────────
 
+// New settings apply with a reload (texts are prepared at start-up): tab and filters are carried over it.
+const TM_RESUME_KEY = 'tm.pwa.resume';
+const TM_RESUME = (() => {
+  try { const r = JSON.parse(sessionStorage.getItem(TM_RESUME_KEY)) || {}; sessionStorage.removeItem(TM_RESUME_KEY); return r; }
+  catch { return {}; }
+})();
+
 function App() {
   const t = useSystemTheme();
   const api = useTeslaMate();
-  const [tab, setTab] = React.useState('status');
+  const R = TM_RESUME;
+  const [tab, setTab] = React.useState(R.tab || 'status');
   const [detail, setDetail] = React.useState(null);   // { type, id? } shown over the current tab
-  // Filters live here so they survive tab switches and data refreshes.
-  const [drivePeriod, setDrivePeriod] = React.useState({ kind: 'mese', off: 0 });
-  const [chargePeriod, setChargePeriod] = React.useState({ kind: 'mese', off: 0 });
-  const [chargeType, setChargeType] = React.useState('all');
-  const [metric, setMetric] = React.useState('km');
+  // Filters live here so they survive tab switches, data refreshes and the settings reload.
+  const [drivePeriod, setDrivePeriod] = React.useState(R.drivePeriod || { kind: 'mese', off: 0 });
+  const [chargePeriod, setChargePeriod] = React.useState(R.chargePeriod || { kind: 'mese', off: 0 });
+  const [chargeType, setChargeType] = React.useState(R.chargeType || 'all');
+  const [metric, setMetric] = React.useState(R.metric || 'km');
+  const [pending, setPending] = React.useState(false); // settings changed in Altro, applied when leaving it
   const scroller = React.useRef(null);
 
-  const go = (id) => { setDetail(null); setTab(id); if (scroller.current) scroller.current.scrollTop = 0; };
+  const reloadTo = (state) => {
+    try { sessionStorage.setItem(TM_RESUME_KEY, JSON.stringify({ tab, drivePeriod, chargePeriod, chargeType, metric, ...state })); } catch {}
+    location.reload();
+  };
+  // One reload for any number of changes, straight into the tab being opened.
+  const go = (id) => {
+    if (pending && id !== 'more') return reloadTo({ tab: id });
+    setDetail(null); setTab(id); if (scroller.current) scroller.current.scrollTop = 0;
+  };
   const back = () => setDetail(null);
 
   if (api.dataVersion === 0) {
@@ -27,7 +44,7 @@ function App() {
     drives:  <DrivesScreen api={api} open={setDetail} period={drivePeriod} setPeriod={setDrivePeriod}/>,
     charges: <ChargesScreen api={api} open={setDetail} period={chargePeriod} setPeriod={setChargePeriod} type={chargeType} setType={setChargeType}/>,
     stats:   <StatsScreen api={api} metric={metric} setMetric={setMetric}/>,
-    more:    <MoreScreen api={api} open={setDetail}/>,
+    more:    <MoreScreen api={api} open={setDetail} pending={pending} onPrefChange={() => setPending(true)}/>,
   };
   const details = detail && {
     drive:   () => <DriveDetail id={detail.id} onBack={back}/>,

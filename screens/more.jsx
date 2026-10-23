@@ -4,7 +4,7 @@
 const APP_VERSION = '0.8.0';
 const fmtDate = (iso) => { if (!iso) return '—'; const d = new Date(iso); return `${d.getDate()} ${MESI3[d.getMonth()]} ${d.getFullYear()}`; };
 
-function MoreScreen({ api, open }) {
+function MoreScreen({ api, open, pending, onPrefChange }) {
   const t = useT();
   const st = window.TM_STATS || {};
   const ups = window.TM_UPDATES || [];
@@ -32,15 +32,16 @@ function MoreScreen({ api, open }) {
 
       <SectionLabel>{tr('Questo dispositivo')}</SectionLabel>
       <ListCard label={tr('Questo dispositivo')}>
-        {(window.TM_CAR?.cars || []).length > 1 && <PrefRow label={tr('Auto da mostrare')} pref="car"
+        {(window.TM_CAR?.cars || []).length > 1 && <PrefRow onChange={onPrefChange} label={tr('Auto da mostrare')} pref="car"
           options={[{ value: 'auto', label: tr('Predefinita') }, ...window.TM_CAR.cars.map(c => ({ value: c.id, label: c.name }))]}/>}
-        <PrefRow label={tr('Lingua')} pref="lang" options={[{ value: 'auto', label: 'Auto' }, { value: 'it', label: 'Italiano' }, { value: 'en', label: 'English' }]}/>
-        <PrefRow label={tr('Formato dei numeri')} pref="numbers" options={[{ value: 'auto', label: 'Auto' },
+        <PrefRow onChange={onPrefChange} label={tr('Lingua')} pref="lang" options={[{ value: 'auto', label: 'Auto' }, { value: 'it', label: 'Italiano' }, { value: 'en', label: 'English' }]}/>
+        <PrefRow onChange={onPrefChange} label={tr('Formato dei numeri')} pref="numbers" options={[{ value: 'auto', label: 'Auto' },
           { value: 'comma', label: '1.234,5' }, { value: 'dot', label: '1,234.5' }, { value: 'space', label: '1 234,5' }]}/>
-        <PrefRow label={tr("Formato dell'ora")} pref="clock" options={[{ value: 'auto', label: 'Auto' }, { value: '24', label: '24 h' }, { value: '12', label: '12 h' }]}/>
-        <PrefRow label={tr('Tema')} pref="theme" options={[{ value: 'auto', label: 'Auto' }, { value: 'light', label: tr('Chiaro') }, { value: 'dark', label: tr('Scuro') }]} last/>
+        <PrefRow onChange={onPrefChange} label={tr("Formato dell'ora")} pref="clock" options={[{ value: 'auto', label: 'Auto' }, { value: '24', label: '24 h' }, { value: '12', label: '12 h' }]}/>
+        <PrefRow onChange={onPrefChange} label={tr('Tema')} pref="theme" options={[{ value: 'auto', label: 'Auto' }, { value: 'light', label: tr('Chiaro') }, { value: 'dark', label: tr('Scuro') }]} last/>
       </ListCard>
       <p style={{ margin: '4px 16px', fontSize: 13, lineHeight: 1.4, color: t.sub }}>
+        {pending && <b style={{ color: t.blue, fontWeight: 600 }}>{tr('Si applicano quando esci da Altro.')} </b>}
         {tr('Valgono solo su questo dispositivo. Auto: segue config.js sul server, se lo imposta, altrimenti il dispositivo.')}
       </p>
 
@@ -61,14 +62,15 @@ function MoreScreen({ api, open }) {
   );
 }
 
-// A per-device setting: label above, segmented choice below; changing it reloads the app.
-function PrefRow({ label, pref, options, last }) {
+// A per-device setting: label above, segmented choice below; saved at once, applied when leaving Altro.
+function PrefRow({ label, pref, options, last, onChange }) {
   const t = useT();
+  const [value, setValue] = React.useState(TM_PREFS[pref] || 'auto');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0', borderBottom: last ? 'none' : `0.5px solid ${t.line}` }}>
       <div style={{ fontSize: 16 }}>{label}</div>
-      {React.createElement(options.length > 4 ? Chips : Seg, { small: true, label, options, value: TM_PREFS[pref] || 'auto', // many cars: chips wrap
-        onChange: (v) => { tmSetPref(pref, v); location.reload(); } })}
+      {React.createElement(options.length > 4 ? Chips : Seg, { small: true, label, options, value, // many cars: chips wrap
+        onChange: (v) => { tmSetPref(pref, v); setValue(v); onChange(); } })}
     </div>
   );
 }
