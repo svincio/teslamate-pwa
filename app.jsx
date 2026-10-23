@@ -65,7 +65,7 @@ function App() {
     <TMTheme.Provider value={t}>
       <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
         {layout === 'desk' && <TabBar side active={tab} onChange={go}/>}
-        <div ref={scroller} style={{ flex: 1, minWidth: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: t.bg }}>
+        <div ref={scroller} style={{ position: 'relative', flex: 1, minWidth: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: t.bg }}>
           <Center>{screens[tab]}</Center>
         </div>
       </div>
