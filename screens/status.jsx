@@ -71,6 +71,8 @@ function StatusScreen({ api, go }) {
           </Card>
         </Grid>
 
+        {car.tyres && <TyresCard ty={car.tyres}/>}
+
         {car.lat && car.lng && (
           <OsmMap label={tr('Posizione')} height={180} zoom={15}
             markers={[{ lat: car.lat, lng: car.lng, color: t.blue, r: 11 }]}
@@ -95,6 +97,23 @@ function StatusScreen({ api, go }) {
         </Card>
       </div>
     </Screen>
+  );
+}
+
+// Front row on top, as you look at the car from above; a soft warning turns the value orange.
+function TyresCard({ ty }) {
+  const t = useT();
+  const pos = { fl: 'Anteriore sinistra', fr: 'Anteriore destra', rl: 'Posteriore sinistra', rr: 'Posteriore destra' };
+  return (
+    <Card label={tr('Pneumatici')} style={{ padding: 16, gap: 10 }}>
+      <div style={{ fontSize: 13, color: t.sub, fontWeight: 600 }}>{tr('Pneumatici')}</div>
+      <Grid cols={2} style={{ gap: '12px 8px' }}>
+        {['fl', 'fr', 'rl', 'rr'].map(k => (
+          <Stat key={k} size={22} v={fmtN(ty[k].v, ty.unit === 'psi' ? 0 : 1)} unit={ty.unit} color={ty[k].warn ? t.orange : undefined}
+            label={ty[k].warn ? `${tr(pos[k])} · ${tr('controlla')}` : tr(pos[k])}/>
+        ))}
+      </Grid>
+    </Card>
   );
 }
 
