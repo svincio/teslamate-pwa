@@ -29,7 +29,8 @@ http.createServer((req, res) => {
     req.pipe(upstream);
     return;
   }
-  const file = path.join(ROOT, req.url === '/' ? '/pwa.html' : req.url);
+  const pathname = decodeURIComponent(req.url.split('?')[0]); // a query string is not part of the file name
+  const file = path.join(ROOT, pathname === '/' ? '/pwa.html' : pathname);
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }
     res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
