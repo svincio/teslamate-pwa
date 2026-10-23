@@ -25,6 +25,7 @@ window.TMConfig = {
   apiBase: "/api/v1",
 
   // Which car to display (TeslaMate car_id, usually 1 for single-vehicle setups).
+  // With more cars, each device can pick another one in Altro/More → This device.
   carId: 1,
 
   // Optional: API_TOKEN value (only required if you also use command/wake_up

@@ -23,7 +23,7 @@ function tmReadConfig() {
   const c = (typeof window !== 'undefined' && window.TMConfig) || {};
   return {
     apiBase: String(c.apiBase || '/api/v1').replace(/\/+$/, ''),
-    carId:   String(c.carId || 1),
+    carId:   String(TM_PREFS.car || c.carId || 1), // the car chosen on this device wins
     token:   String(c.token || ''),
     refreshSeconds: Number.isFinite(c.refreshSeconds) ? c.refreshSeconds : 60,
     priceAcPerKwh: Number.isFinite(c.priceAcPerKwh) ? c.priceAcPerKwh : null,
@@ -538,9 +538,16 @@ function fmtRelativeDay(ts) {
 async function tmLoadCar(id) {
   const [cars, status] = await Promise.all([
     loadCars().catch(() => null),
-    loadStatus(id),
+    loadStatus(id).catch(e => e),
   ]);
-  return normalizeCar(cars, status, window.TM_CAR || {});
+  const list = pick(cars, 'cars') || [];
+  const idOf = (c) => String(pick(c, 'car_id', 'id'));
+  // The car chosen on this device is gone from TeslaMate: forget the choice instead of failing forever.
+  if (TM_PREFS.car && list.length && !list.some(c => idOf(c) === String(id))) { tmSetPref('car', null); location.reload(); }
+  if (status instanceof Error) throw status;
+  const car = normalizeCar({ car: list.find(c => idOf(c) === String(id)) || null }, status, window.TM_CAR || {});
+  car.cars = list.map(c => ({ id: idOf(c), name: pick(c, 'name') || `#${idOf(c)}` })); // for the car choice
+  return car;
 }
 
 // Drives: last 12 months (the window every stat/chart uses) — filtering by date
@@ -617,7 +624,7 @@ function applyHistory(d) {
 // while fresh data loads. _raw is dropped (only used while building; keeps it < 1 MB).
 // shortcut: day labels ("Oggi"/"Ieri") and 14-day buckets are precomputed, so cached
 // ones can be off by a day until the refresh lands (seconds); fine unless offline for long.
-const TM_CACHE_KEY = `tm.pwa.cache.v2.${TM_LANG}.${TM_H12 ? 12 : 24}`; // bump when the cached shape changes; per language and clock (labels are precomputed)
+const TM_CACHE_KEY = `tm.pwa.cache.v2.${TM_LANG}.${TM_H12 ? 12 : 24}.car${tmReadConfig().carId}`; // bump when the cached shape changes; per language and clock (labels are precomputed) and per car
 const stripRaw = (arr) => (arr || []).map(({ _raw, ...x }) => x);
 
 function tmReadCache() {

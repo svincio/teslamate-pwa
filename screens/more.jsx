@@ -32,6 +32,8 @@ function MoreScreen({ api, open }) {
 
       <SectionLabel>{tr('Questo dispositivo')}</SectionLabel>
       <ListCard label={tr('Questo dispositivo')}>
+        {(window.TM_CAR?.cars || []).length > 1 && <PrefRow label={tr('Auto da mostrare')} pref="car"
+          options={[{ value: 'auto', label: tr('Predefinita') }, ...window.TM_CAR.cars.map(c => ({ value: c.id, label: c.name }))]}/>}
         <PrefRow label={tr('Lingua')} pref="lang" options={[{ value: 'auto', label: 'Auto' }, { value: 'it', label: 'Italiano' }, { value: 'en', label: 'English' }]}/>
         <PrefRow label={tr('Formato dei numeri')} pref="numbers" options={[{ value: 'auto', label: 'Auto' },
           { value: 'comma', label: '1.234,5' }, { value: 'dot', label: '1,234.5' }, { value: 'space', label: '1 234,5' }]}/>
@@ -65,8 +67,8 @@ function PrefRow({ label, pref, options, last }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0', borderBottom: last ? 'none' : `0.5px solid ${t.line}` }}>
       <div style={{ fontSize: 16 }}>{label}</div>
-      <Seg small label={label} options={options} value={TM_PREFS[pref] || 'auto'}
-        onChange={(v) => { tmSetPref(pref, v); location.reload(); }}/>
+      {React.createElement(options.length > 4 ? Chips : Seg, { small: true, label, options, value: TM_PREFS[pref] || 'auto', // many cars: chips wrap
+        onChange: (v) => { tmSetPref(pref, v); location.reload(); } })}
     </div>
   );
 }

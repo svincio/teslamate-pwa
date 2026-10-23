@@ -302,7 +302,7 @@ test('reopening the app shows the cached data even if the API is unreachable', a
     await gotoAppReady(page);
     await waitHistory(page);
     await page.waitForFunction(() => {
-      try { return !!JSON.parse(localStorage.getItem('tm.pwa.cache.v2.it.24')).history; } catch { return false; }
+      try { return !!JSON.parse(localStorage.getItem('tm.pwa.cache.v2.it.24.car1')).history; } catch { return false; }
     }, { timeout: 180000 });
     await page.setRequestInterception(true);
     page.on('request', (r) => (r.url().includes('/api/v1/') ? r.abort() : r.continue()));

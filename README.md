@@ -76,7 +76,7 @@ Copy [`config.js`](config.js), edit it and mount it as shown above:
 | Key | Default | Meaning |
 |---|---|---|
 | `apiBase` | `"/api/v1"` | TeslaMateAPI base URL. Keep it same-origin. |
-| `carId` | `1` | TeslaMate car id |
+| `carId` | `1` | TeslaMate car id. With more cars, each device can pick another one in More → This device |
 | `token` | `""` | TeslaMateAPI `API_TOKEN`. Not needed for read-only endpoints; it would be readable by anyone. |
 | `refreshSeconds` | `60` | Status polling interval while the app is open, `0` disables it |
 | `clock` | `"auto"` | `"auto"` (device habit), `"24"` or `"12"` (AM/PM). Per-device override in More → This device |
@@ -108,7 +108,7 @@ TM_API_HOST=teslamate.example.com node local-server.js   # http://localhost:8000
 `local-server.js` serves the files and proxies `/api/v1` to your TeslaMateAPI over HTTPS.
 Without a TeslaMate at hand, `TM_MOCK=1 node local-server.js` serves invented data instead
 (Milan area, about two years of trips and charges, see `demo/mock-api.js`); add `TM_MOCK_UNITS=imperial`
-for miles and °F.
+for miles and °F, `TM_MOCK_CARS=2` for a second car.
 
 End-to-end tests run a real Chrome (Google Chrome or Chromium installed) against your data or the demo data:
 
