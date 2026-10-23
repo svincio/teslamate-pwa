@@ -33,6 +33,21 @@ const TM_NUM_LOCALE = (() => {
 })();
 document.documentElement.lang = TM_LANG;
 
+// Clock: device choice, else config.js `clock` ("24" | "12"), else the device habit (AM/PM locales → 12 h).
+const TM_H12 = (() => {
+  const c = tmChoice('clock', ['24', '12']);
+  if (c) return c === '12';
+  try { return /h1[12]/.test(new Intl.DateTimeFormat(navigator.language, { hour: 'numeric' }).resolvedOptions().hourCycle || ''); }
+  catch { return false; }
+})();
+const TM_CLOCK = [false, true].map(second => new Intl.DateTimeFormat(TM_LOCALE,
+  { hour: 'numeric', minute: '2-digit', ...(second ? { second: '2-digit' } : {}), hour12: true }));
+function fmtClock(iso, seconds) {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return '—';
+  return TM_H12 ? TM_CLOCK[seconds ? 1 : 0].format(d) : d.toTimeString().slice(0, seconds ? 8 : 5);
+}
+
 const MESI = TM_LANG === 'it'
   ? ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre']
   : ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -123,7 +138,7 @@ const TM_EN = {
   'Impostazioni': 'Settings', 'Connessione e app': 'Connection and app', 'Ultimo aggiornamento': 'Last update',
   'Aggiorna ora': 'Refresh now', 'in corso…': 'in progress…', 'Aggiornamento automatico': 'Auto refresh',
   'ogni {n} s': 'every {n} s', 'spento': 'off', 'Installazione': 'Installed', 'Sulla schermata Home': 'On the Home Screen',
-  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', 'Chiaro': 'Light', 'Scuro': 'Dark', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
+  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', "Formato dell'ora": 'Time format', 'Chiaro': 'Light', 'Scuro': 'Dark', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
   'Indirizzo e autenticazione si configurano in config.js sul server.': 'Server address and authentication are set in config.js on the server.',
   'Valgono solo su questo dispositivo. Auto: segue config.js sul server, se lo imposta, altrimenti il dispositivo.':
     'These apply to this device only. Auto: follows config.js on the server, if it sets one, otherwise the device.',
@@ -144,4 +159,4 @@ function tr(it, vars) {
   return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : s;
 }
 
-Object.assign(window, { TM_PREFS, tmSetPref, tmChoice, TM_LANG, TM_LOCALE, TM_NUM_LOCALE, MESI, MESI3, tr });
+Object.assign(window, { TM_PREFS, tmSetPref, tmChoice, TM_LANG, TM_LOCALE, TM_NUM_LOCALE, TM_H12, fmtClock, MESI, MESI3, tr });

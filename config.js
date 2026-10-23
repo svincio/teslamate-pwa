@@ -46,6 +46,9 @@ window.TMConfig = {
   // Theme: "auto" (the system setting), "light" or "dark". Each device can override it in Altro/More → This device.
   theme: "auto",
 
+  // Clock: "auto" (the device habit), "24" or "12" (AM/PM). Each device can override it in Altro/More → This device.
+  clock: "auto",
+
 
   // Optional: price per kWh (in `currency`) used to estimate charge cost when TeslaMate's own cost
   // tracking isn't configured (i.e. the API returns cost: 0). Leave null to
