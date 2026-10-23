@@ -28,6 +28,7 @@ function App() {
     try { sessionStorage.setItem(TM_RESUME_KEY, JSON.stringify({ tab, drivePeriod, chargePeriod, chargeType, metric, ...state })); } catch {}
     location.reload();
   };
+  window.tmReloadHere = () => reloadTo({}); // car switch in the titles (kit.jsx): same tab, same filters
   // One reload for any number of changes, straight into the tab being opened.
   const go = (id) => {
     if (pending && id !== 'more') return reloadTo({ tab: id });
