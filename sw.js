@@ -1,7 +1,7 @@
 // TeslaMate PWA — Service Worker
 // App files: network first with offline copy. CDN libraries: cache first. API: network only.
 
-const CACHE = 'teslamate-pwa-v9';
+const CACHE = 'teslamate-pwa-v10';
 const NET_TIMEOUT_MS = 3000; // slower than this (bad signal, VPN down): use the saved copy
 const SHELL = [
   './pwa.html',

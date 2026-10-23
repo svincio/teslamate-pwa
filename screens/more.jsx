@@ -1,7 +1,7 @@
 // Altro + Salute batteria + Luoghi + Aggiornamenti
 // (spec: docs/design/screens/09-altro.html, 10-salute-batteria.html)
 
-const APP_VERSION = '0.11.0';
+const APP_VERSION = '0.11.1';
 const fmtDate = (iso) => { if (!iso) return '—'; const d = new Date(iso); return `${d.getDate()} ${MESI3[d.getMonth()]} ${d.getFullYear()}`; };
 
 function MoreScreen({ api, open, pending, onPrefChange }) {
