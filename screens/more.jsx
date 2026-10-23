@@ -30,6 +30,14 @@ function MoreScreen({ api, open }) {
         <UpdatesList items={ups.slice(0, 4)}/>
       </>}
 
+      <SectionLabel>{tr('Questo dispositivo')}</SectionLabel>
+      <ListCard label={tr('Questo dispositivo')}>
+        <PrefRow label={tr('Lingua')} pref="lang" options={[{ value: 'auto', label: 'Auto' }, { value: 'it', label: 'Italiano' }, { value: 'en', label: 'English' }]} last/>
+      </ListCard>
+      <p style={{ margin: '4px 16px', fontSize: 13, lineHeight: 1.4, color: t.sub }}>
+        {tr('Valgono solo su questo dispositivo. Auto: segue config.js sul server, se lo imposta, altrimenti il dispositivo.')}
+      </p>
+
       <SectionLabel>{tr('Impostazioni')}</SectionLabel>
       <ListCard label={tr('Connessione e app')}>
         <Row label="TeslaMateAPI" value={<span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: conn[1] }}><span style={{ width: 8, height: 8, borderRadius: 4, background: conn[1] }}/>{conn[0]}</span>}/>
@@ -44,6 +52,18 @@ function MoreScreen({ api, open }) {
         {tr("Indirizzo, autenticazione e auto si configurano in config.js sul server. Il tema segue l'impostazione dell'iPhone.")}
       </p>
     </Screen>
+  );
+}
+
+// A per-device setting: label above, segmented choice below; changing it reloads the app.
+function PrefRow({ label, pref, options, last }) {
+  const t = useT();
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0', borderBottom: last ? 'none' : `0.5px solid ${t.line}` }}>
+      <div style={{ fontSize: 16 }}>{label}</div>
+      <Seg small label={label} options={options} value={TM_PREFS[pref] || 'auto'}
+        onChange={(v) => { tmSetPref(pref, v); location.reload(); }}/>
+    </div>
   );
 }
 

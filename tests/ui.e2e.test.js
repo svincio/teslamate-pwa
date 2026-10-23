@@ -59,6 +59,25 @@ test('English UI when the browser is not Italian', async () => {
   }, { lang: 'en-US' });
 });
 
+test('language chosen on this device overrides the system one and survives a restart', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);                                   // device in Italian
+    await tab(page, 'Altro');
+    const choose = (label) => Promise.all([ // the choice reloads the app
+      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+      page.evaluate((l) => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === l).click(), label),
+    ]);
+    await choose('English');
+    await page.waitForFunction(() => document.body.innerText.includes('Battery'), { timeout: 30000 }); // reloaded in English
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.body.innerText.includes('Battery'), { timeout: 30000 });
+    assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
+    await tab(page, 'More');
+    await choose('Auto');
+    await page.waitForFunction(() => document.body.innerText.includes('Batteria'), { timeout: 30000 }); // back to the device language
+  });
+});
+
 test('bottom tab bar switches between the 5 screens', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);
