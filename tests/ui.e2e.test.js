@@ -78,6 +78,21 @@ test('language chosen on this device overrides the system one and survives a res
   });
 });
 
+test('number format chosen on this device: separators change, the language does not', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);                                   // Italian device: 12.345 km
+    const odo = () => page.evaluate(() => ((document.body.innerText.match(/([\d.,\u202f\u00a0 ]+)\s*km\s*\n\s*Odometro/) || [])[1] || '').trim());
+    assert.match(await odo(), /^\d{1,3}(\.\d{3})+$/);
+    await tab(page, 'Altro');
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+      page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '1,234.5').click()),
+    ]);
+    await page.waitForFunction(() => document.body.innerText.includes('Odometro'), { timeout: 30000 });
+    assert.match(await odo(), /^\d{1,3}(,\d{3})+$/, 'thousands with a comma, UI still Italian');
+  });
+});
+
 test('bottom tab bar switches between the 5 screens', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);

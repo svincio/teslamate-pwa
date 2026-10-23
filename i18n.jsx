@@ -24,6 +24,13 @@ function tmChoice(key, allowed) {
 
 const TM_LANG = tmChoice('lang', ['it', 'en']) || (/^it\b/i.test(navigator.language || '') ? 'it' : 'en');
 const TM_LOCALE = TM_LANG === 'it' ? 'it-IT' : 'en-GB';
+// Thousands/decimal separators: device choice, else config.js `numbers`, else the device's own format.
+const TM_NUM_FORMATS = { comma: 'it-IT', dot: 'en-US', space: 'fr-FR' }; // 1.234,5 · 1,234.5 · 1 234,5
+const TM_NUM_LOCALE = (() => {
+  const c = tmChoice('numbers', Object.keys(TM_NUM_FORMATS));
+  if (c) return TM_NUM_FORMATS[c];
+  try { return new Intl.NumberFormat(navigator.language).resolvedOptions().locale; } catch { return 'en-US'; }
+})();
 document.documentElement.lang = TM_LANG;
 
 const MESI = TM_LANG === 'it'
@@ -116,7 +123,7 @@ const TM_EN = {
   'Impostazioni': 'Settings', 'Connessione e app': 'Connection and app', 'Ultimo aggiornamento': 'Last update',
   'Aggiorna ora': 'Refresh now', 'in corso…': 'in progress…', 'Aggiornamento automatico': 'Auto refresh',
   'ogni {n} s': 'every {n} s', 'spento': 'off', 'Installazione': 'Installed', 'Sulla schermata Home': 'On the Home Screen',
-  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
+  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
   "Indirizzo, autenticazione e auto si configurano in config.js sul server. Il tema segue l'impostazione dell'iPhone.":
     'Server address, authentication and car are set in config.js on the server. The theme follows the system setting.',
   'Valgono solo su questo dispositivo. Auto: segue config.js sul server, se lo imposta, altrimenti il dispositivo.':
@@ -138,4 +145,4 @@ function tr(it, vars) {
   return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : s;
 }
 
-Object.assign(window, { TM_PREFS, tmSetPref, tmChoice, TM_LANG, TM_LOCALE, MESI, MESI3, tr });
+Object.assign(window, { TM_PREFS, tmSetPref, tmChoice, TM_LANG, TM_LOCALE, TM_NUM_LOCALE, MESI, MESI3, tr });

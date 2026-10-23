@@ -79,6 +79,7 @@ Copy [`config.js`](config.js), edit it and mount it as shown above:
 | `carId` | `1` | TeslaMate car id |
 | `token` | `""` | TeslaMateAPI `API_TOKEN`. Not needed for read-only endpoints; it would be readable by anyone. |
 | `refreshSeconds` | `60` | Status polling interval while the app is open, `0` disables it |
+| `numbers` | `"auto"` | Separators: `"auto"` (device format), `"comma"` 1.234,5, `"dot"` 1,234.5, `"space"` 1 234,5. Per-device override in More → This device |
 | `lang` | `"auto"` | `"auto"` (device language, English if not Italian), `"it"` or `"en"`. Each device can override it in More → This device |
 | `priceAcPerKwh`, `priceDcPerKwh` | `null` | Price per kWh estimate when TeslaMate records no charge cost |
 | `currency` | `"EUR"` | ISO 4217 code of your costs (`USD`, `GBP`, `CHF`…) |
