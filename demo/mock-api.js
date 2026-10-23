@@ -217,7 +217,7 @@ function raw(url) {
     car_status: { healthy: true, locked: true, sentry_mode: false, windows_open: false, doors_open: false, trunk_open: !!C.trunkOpen, frunk_open: false, is_user_present: false },
     car_details: { model: C.model, trim_badging: C.trim },
     car_geodata: { geofence: 'Home', location: { latitude: P.home.lat, longitude: P.home.lng }, latitude: P.home.lat, longitude: P.home.lng },
-    car_versions: { version: D.updates[0].version, update_available: false, update_version: '' },
+    car_versions: { version: D.updates[0].version, update_available: !!C.trunkOpen, update_version: C.trunkOpen ? '2026.38.6' : '' },
     driving_details: { shift_state: '', power: 0, speed: 0, heading: 0, elevation: P.home.elev },
     tpms_details: { tpms_pressure_fl: 2.9, tpms_pressure_fr: 2.875, tpms_pressure_rl: C.trunkOpen ? 2.45 : 2.9, tpms_pressure_rr: 2.9,
       tpms_soft_warning_fl: false, tpms_soft_warning_fr: false, tpms_soft_warning_rl: !!C.trunkOpen, tpms_soft_warning_rr: false },
