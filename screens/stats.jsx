@@ -25,7 +25,11 @@ function StatsScreen({ api, metric, setMetric }) {
   const tot = vals.reduce((a, b) => a + b, 0);
   const nonZero = vals.filter(v => v > 0);
   const avg = m.sum ? tot / 12 : (nonZero.length ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length : 0);
-
+  const [selected, setSelected] = React.useState(() => Math.max(0, vals.length - 1));
+  React.useEffect(() => setSelected(Math.max(0, vals.length - 1)), [metric, vals.length]);
+  const picked = Math.min(selected, Math.max(0, vals.length - 1));
+  const pickedValue = vals[picked] || 0;
+  const pickedLabel = labels[picked] || '';
   const now = new Date(), start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
   const sub = `${tr('Ultimi 12 mesi')} · ${MESI3[start.getMonth()]} ${start.getFullYear()} – ${MESI3[now.getMonth()]} ${now.getFullYear()}`;
 
@@ -52,13 +56,21 @@ function StatsScreen({ api, metric, setMetric }) {
                 <div style={{ fontSize: 17, fontWeight: 600 }}>{fmtMetric(m, avg)}</div>
               </div>
             </div>
-            <div role="img" aria-label={tr('Barre mensili')} style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 5, alignItems: 'end', height: 130 }}>
-              {vals.map((v, i) => (
-                <div key={i} title={`${labels[i]}: ${fmtMetric(m, v)}`} style={{ height: `${Math.max(1, Math.round((v / max) * 100))}%`, background: i === vals.length - 1 ? t.blue : t.blueSoft, borderRadius: '4px 4px 2px 2px' }}/>
-              ))}
+            <div style={{ fontSize: 14, color: t.sub, minHeight: 20 }} data-month-value>{pickedLabel} · <b style={{ color: t.text }}>{fmtMetric(m, pickedValue)}</b></div>
+            <div style={{ display: 'flex', gap: 7, height: 130 }}>
+              <AxisScale top={fmtMetric(m, max)} mid={fmtMetric(m, max / 2)} bottom="0"/>
+              <div data-month-bars role="group" aria-label={tr('Barre mensili')} style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 5, alignItems: 'stretch' }}>
+                {vals.map((v, i) => {
+                  const on = i === picked;
+                  return <button key={i} type="button" aria-pressed={on} aria-label={`${labels[i]}: ${fmtMetric(m, v)}`} onClick={() => setSelected(i)} onMouseEnter={() => setSelected(i)}
+                    style={{ minWidth: 0, padding: 0, border: 0, background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'flex-end' }}>
+                    <span style={{ width: '100%', height: `${Math.max(1, Math.round((v / max) * 100))}%`, background: on ? t.blue : t.blueSoft, borderRadius: '4px 4px 2px 2px' }}/>
+                  </button>;
+                })}
+              </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 5, marginTop: -8, fontSize: 10, color: t.sub, textAlign: 'center' }}>
-              {labels.map((l, i) => <span key={i}>{(l || '').charAt(0).toUpperCase()}</span>)}
+            <div style={{ paddingLeft: 39, display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 5, marginTop: -8, fontSize: 10, color: t.sub, textAlign: 'center' }}>
+              {labels.map((l, i) => <span key={i} style={{ color: i === picked ? t.blue : undefined, fontWeight: i === picked ? 700 : undefined }}>{(l || '').charAt(0).toUpperCase()}</span>)}
             </div>
           </Card>
 
@@ -83,6 +95,7 @@ function StatsScreen({ api, metric, setMetric }) {
   );
 }
 
+
 // Battery lost while parked (api.jsx computeIdle): last 30 days and a monthly average for the last 12 months.
 function IdleCard() {
   const t = useT();
@@ -96,6 +109,9 @@ function IdleCard() {
     return cap ? (x.kwhPerDay || 0) : x.pctPerDay;
   });
   const max = Math.max(0.0001, ...months);
+  const [selected, setSelected] = React.useState(11);
+  const picked = Math.min(selected, 11), value = months[picked] || 0;
+  const monthLabel = labels[picked] || '';
   return (
     <Card label={tr('Consumo da fermo')} data-idle style={{ padding: '14px 16px' }}>
       <CardHead title={tr('Consumo da fermo')} note={tr('Soste negli ultimi 30 giorni: {n}', { n: fmtN(last.n) })}/>
@@ -107,11 +123,17 @@ function IdleCard() {
           {cap > 0 && <div style={{ fontSize: 15, color: t.sub }}>{fmtN(last.pctPerDay, 1)} {tr('% al giorno')}</div>}
         </div>
       ) : <div style={{ fontSize: 14, color: t.sub }}>{tr('Nessuna sosta di almeno 12 h negli ultimi 30 giorni')}</div>}
-      <div role="img" aria-label={tr('Media mensile degli ultimi 12 mesi')} style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 5, alignItems: 'end', height: 70 }}>
-        {months.map((v, i) => (
-          <div key={i} title={`${labels[i] || ''}: ${cap ? fmtN(v, 2) + ' kWh' : fmtN(v, 1) + ' %'}`}
-            style={{ height: `${v ? Math.max(4, Math.round((v / max) * 100)) : 2}%`, background: i === 11 ? t.blue : t.blueSoft, borderRadius: '4px 4px 2px 2px' }}/>
-        ))}
+      <div style={{ fontSize: 14, color: t.sub, minHeight: 20 }} data-idle-month-value>{monthLabel} · <b style={{ color: t.text }}>{value ? `${cap ? fmtN(value, 2) + ' kWh' : fmtN(value, 1) + ' %'} ${tr('al giorno')}` : tr('Nessuna sosta di almeno 12 h')}</b></div>
+      <div style={{ display: 'flex', gap: 7, height: 70 }}>
+        <AxisScale top={`${cap ? fmtN(max, 2) + ' kWh' : fmtN(max, 1) + ' %'}`} mid={`${cap ? fmtN(max / 2, 2) + ' kWh' : fmtN(max / 2, 1) + ' %'}`} bottom="0"/>
+        <div data-idle-month-bars role="group" aria-label={tr('Media mensile degli ultimi 12 mesi')} style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 5, alignItems: 'stretch' }}>
+          {months.map((v, i) => {
+            const on = i === picked, text = v ? `${cap ? fmtN(v, 2) + ' kWh' : fmtN(v, 1) + ' %'} ${tr('al giorno')}` : tr('Nessuna sosta di almeno 12 h');
+            return <button key={i} type="button" aria-pressed={on} aria-label={`${labels[i] || ''}: ${text}`} onClick={() => setSelected(i)} onMouseEnter={() => setSelected(i)} style={{ minWidth: 0, padding: 0, border: 0, background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'flex-end' }}>
+              <span style={{ width: '100%', height: `${v ? Math.max(4, Math.round((v / max) * 100)) : 2}%`, background: on ? t.blue : t.blueSoft, borderRadius: '4px 4px 2px 2px' }}/>
+            </button>;
+          })}
+        </div>
       </div>
       <div style={{ fontSize: 12, color: t.sub, lineHeight: 1.35 }}>{tr('Soste di almeno 12 h senza spostamenti né ricariche. La batteria è registrata a passi dell’1%: conta la media, non la singola sosta.')}</div>
     </Card>
@@ -147,10 +169,15 @@ function ConsumptionScatter({ title, pts, unitX, eff, effMax, color, fmtX }) {
   return (
     <Card label={title} style={{ padding: '14px 16px 12px', gap: 8 }}>
       <CardHead title={title} note={fit ? `${signed(fit.slope)} ${eff} per ${unitX}` : ''}/>
-      <Scatter label={tr('{title}, punti per viaggio con linea di tendenza', { title })} pts={inRange} color={color}
-        xMin={xMin} xMax={xMax} yMin={yMin} yMax={yMax}
-        trend={fit ? [{ x: xMin, y: fit.at(xMin) }, { x: xMax, y: fit.at(xMax) }] : null}/>
-      <AxisLabels items={[fmtX(xMin), fmtX(Math.round((xMin + xMax) / 2)), fmtX(xMax)]}/>
+      <div style={{ display: 'flex', gap: 7, height: 130 }}>
+        <AxisScale top={`${fmtN(yMax)} ${eff}`} mid={`${fmtN((yMin + yMax) / 2)} ${eff}`} bottom={`${fmtN(yMin)} ${eff}`}/>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Scatter label={tr('{title}, punti per viaggio con linea di tendenza', { title })} pts={inRange} color={color}
+            xMin={xMin} xMax={xMax} yMin={yMin} yMax={yMax}
+            trend={fit ? [{ x: xMin, y: fit.at(xMin) }, { x: xMax, y: fit.at(xMax) }] : null}/>
+        </div>
+      </div>
+      <AxisLabels items={[fmtX(xMin), fmtX(Math.round((xMin + xMax) / 2)), fmtX(xMax)]} style={{ paddingLeft: 39 }}/>
     </Card>
   );
 }

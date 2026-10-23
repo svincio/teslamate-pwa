@@ -519,6 +519,14 @@ function AxisLabels({ items, style }) {
   );
 }
 
+// Three sparse ticks are enough on phone charts: each value keeps its unit, without a dense grid.
+function AxisScale({ top, mid, bottom }) {
+  const t = useT();
+  return <div aria-hidden="true" style={{ width: 32, flex: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: 10, lineHeight: 1, color: t.sub, textAlign: 'right', overflow: 'hidden' }}>
+    <span>{top}</span><span>{mid}</span><span>{bottom}</span>
+  </div>;
+}
+
 // ─── Map (Leaflet + OSM tiles, darkened via CSS in dark mode) ─
 // Static mini-map: no dragging/zoom so it never traps the page scroll.
 // markers: [{lat,lng,color,r,label}], route: [[lat,lng]...], start/end markers for routes.
@@ -733,6 +741,6 @@ Object.assign(window, {
   fmtN, fmtMoney, CUR, fmtMin, hhmm, dayLabel, dayShort, sinceLabel, agoLabel, linFit,
   PERIOD_KINDS, periodRange, inPeriod, PeriodBar,
   Screen, CarSwitch, Title, Card, CardHead, BackLink, NavArrows, Stat, Grid, Divider, Seg, Chips, Bar, SocBar, Row, ListCard,
-  SectionLabel, useWidth, useLayout, LineChart, Scatter, AxisLabels, OsmMap, HistoryLoading, ErrorBanner, Empty,
+  SectionLabel, useWidth, useLayout, LineChart, Scatter, AxisLabels, AxisScale, OsmMap, HistoryLoading, ErrorBanner, Empty,
   ICONS, TABS, TabBar, saveCsv, csvName, csvStamp, ExportButton,
 });

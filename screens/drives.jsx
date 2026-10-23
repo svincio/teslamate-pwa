@@ -214,9 +214,9 @@ function DriveDetail({ id, onBack, onPrev, onNext, hasPrev, hasNext }) {
   const speeds = pts.map(p => p.speed), powers = pts.map(p => p.power), elev = pts.map(p => p.elevation);
   const maxOf = (a) => a.length ? Math.max(...a) : 0, minOf = (a) => a.length ? Math.min(...a) : 0;
   const charts = pts.length > 1 ? [
-    { title: tr('Velocità'), note: `max ${fmtN(zoomed ? maxOf(part.map(p => p.speed)) : (d.speedMax || maxOf(speeds)))} ${U.speed}`, color: t.blue, vals: speeds, min: 0, max: Math.max(10, maxOf(speeds) * 1.15) },
-    { title: tr('Potenza'), note: tr('max {v} kW · rigenerazione sotto lo zero', { v: fmtN(maxOf(powers)) }), color: t.orange, vals: powers, min: Math.min(0, minOf(powers)) * 1.1, max: Math.max(10, maxOf(powers) * 1.1), zero: true },
-    { title: tr('Altitudine'), note: `${fmtN(minOf(elev))}–${fmtN(maxOf(elev))} m`, color: t.purple, vals: elev, min: minOf(elev) - 5, max: maxOf(elev) + 5 },
+    { title: tr('Velocità'), unit: U.speed, note: `max ${fmtN(zoomed ? maxOf(part.map(p => p.speed)) : (d.speedMax || maxOf(speeds)))} ${U.speed}`, color: t.blue, vals: speeds, min: 0, max: Math.max(10, maxOf(speeds) * 1.15) },
+    { title: tr('Potenza'), unit: 'kW', note: tr('max {v} kW · rigenerazione sotto lo zero', { v: fmtN(maxOf(powers)) }), color: t.orange, vals: powers, min: Math.min(0, minOf(powers)) * 1.1, max: Math.max(10, maxOf(powers) * 1.1), zero: true },
+    { title: tr('Altitudine'), unit: 'm', note: `${fmtN(minOf(elev))}–${fmtN(maxOf(elev))} m`, color: t.purple, vals: elev, min: minOf(elev) - 5, max: maxOf(elev) + 5 },
   ] : [];
   const route = trace && trace.map(p => [p.lat, p.lng]);
   const mapZoomed = mapSel && (mapSel[0] > 0 || mapSel[1] < n - 1);
@@ -288,8 +288,11 @@ function DriveDetail({ id, onBack, onPrev, onNext, hasPrev, hasNext }) {
         {charts.map(c => (
           <Card key={c.title} label={c.title} style={{ padding: '14px 16px 12px', gap: 8 }}>
             <CardHead title={zoomed ? `${c.title} · ${tr('tratto')}` : c.title} note={c.note}/>
-            <LineChart label={tr('{title} nel tempo', { title: c.title })} zero={c.zero} series={[{ vals: c.vals, color: c.color, min: c.min, max: c.max, area: true }]}/>
-            <AxisLabels items={times}/>
+            <div style={{ display: 'flex', gap: 7, height: 96 }}>
+              <AxisScale top={`${fmtN(c.max)} ${c.unit}`} mid={`${fmtN((c.min + c.max) / 2)} ${c.unit}`} bottom={`${fmtN(c.min)} ${c.unit}`}/>
+              <div style={{ flex: 1, minWidth: 0 }}><LineChart label={tr('{title} nel tempo', { title: c.title })} zero={c.zero} series={[{ vals: c.vals, color: c.color, min: c.min, max: c.max, area: true }]}/></div>
+            </div>
+            <AxisLabels items={times} style={{ paddingLeft: 39 }}/>
           </Card>
         ))}
       </div>
