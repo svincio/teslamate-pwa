@@ -159,6 +159,12 @@ const TM_EN = {
   'Precedente': 'Previous', 'Successivo': 'Next',
   'Nessun viaggio selezionato': 'No trip selected', 'Scegli un viaggio dall’elenco.': 'Pick a trip from the list.',
   'Nessuna ricarica selezionata': 'No charge selected', 'Scegli una ricarica dall’elenco.': 'Pick a charge from the list.',
+  'Consumo da fermo': 'Idle drain', 'Soste negli ultimi 30 giorni: {n}': 'Stops in the last 30 days: {n}',
+  'kWh al giorno': 'kWh per day', '% al giorno': '% per day', 'Media mensile degli ultimi 12 mesi': 'Monthly average, last 12 months',
+  'Nessuna sosta di almeno 12 h negli ultimi 30 giorni': 'No stop of 12 h or more in the last 30 days',
+  'Soste di almeno 12 h senza spostamenti né ricariche. La batteria è registrata a passi dell’1%: conta la media, non la singola sosta.':
+    'Stops of 12 h or more with no driving or charging. Battery level is logged in 1 % steps: the average counts, not a single stop.',
+  'Sosta prima di questo viaggio': 'Parked before this trip', 'Sosta prima di questa ricarica': 'Parked before this charge',
   'Esporta CSV': 'Export CSV', 'ricariche': 'charges',
   'Inizio': 'Start', 'Fine': 'End', 'Da': 'From', 'A': 'To', 'Vel. max': 'Max speed',
   'Batteria inizio': 'Battery start', 'Batteria fine': 'Battery end', 'Temp. esterna': 'Outside temp.',

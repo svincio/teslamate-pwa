@@ -255,6 +255,8 @@ function ChargeDetail({ id, onBack, onPrev, onNext, hasPrev, hasNext }) {
         ) : <div style={{ fontSize: 14, color: err ? t.red : t.sub, padding: '20px 0' }}>{err ? tr('Curva non disponibile: {err}', { err }) : det ? tr('Nessun dato di dettaglio') : tr('Carico la curva…')}</div>}
       </Card>
 
+      <IdleLine type="charge" id={c.id}/>
+
       <ListCard label={tr('Dati tecnici')}>
         <Row label={tr('Tensione')} value={volt ? `${fmtN(volt)} V` : '—'}/>
         <Row label={tr('Corrente')} value={amp ? `${fmtN(amp)} A${phases ? ` · ${phases} ${phases > 1 ? tr('fasi') : tr('fase')}` : ''}` : '—'}/>
