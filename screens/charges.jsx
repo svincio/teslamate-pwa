@@ -8,7 +8,10 @@ const isDC = (c) => c.type !== 'home';
 
 function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
   const t = useT();
+  const layout = useLayout();
+  const desk = layout === 'desk';
   const [limit, setLimit] = React.useState(PAGE);
+  const [selId, setSelId] = React.useState(null); // solo desk: elenco a sinistra, dettaglio a destra
   React.useEffect(() => setLimit(PAGE), [type, period.kind, period.off]);
 
   const all = window.TM_CHARGES || [];
@@ -26,6 +29,13 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
 
   const list = inP.filter(c => type === 'all' || (type === 'dc' ? isDC(c) : !isDC(c)));
 
+  // Vista elenco+dettaglio (desk): la selezione segue i filtri, le frecce ↑↓ scorrono `list`.
+  React.useEffect(() => {
+    if (desk && !list.some(c => c.id === selId)) setSelId(list[0] ? list[0].id : null);
+  }, [desk, type, period.kind, period.off, list.length]);
+  const onOpen = desk ? setSelId : (id) => open({ type: 'charge', id });
+  const selIdx = list.findIndex(c => c.id === selId);
+
   // One marker per place (~100 m grid); bigger when charged there more often.
   const places = new Map();
   for (const c of inP) {
@@ -39,7 +49,7 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
     lat: p.lat, lng: p.lng, color: p.dc > p.n / 2 ? t.orange : t.green, r: Math.min(13, 6 + Math.log2(p.n)),
   }));
 
-  return (
+  const content = (
     <Screen>
       <Title>{tr('Ricariche')}</Title>
       <PeriodBar value={period} onChange={setPeriod} kinds={CHARGE_PERIODS}/>
@@ -76,7 +86,9 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
             text={type === 'dc' ? tr('Le ricariche a colonnine rapide e Supercharger compariranno qui.') : tr('Le ricariche registrate da TeslaMate compariranno qui.')}
             action={type !== 'all' ? tr('Mostra tutte le ricariche') : null} onAction={() => setType('all')}/>}
 
-          {list.slice(0, limit).map(c => <ChargeCard key={c.id} c={c} onClick={() => open({ type: 'charge', id: c.id })}/>)}
+          <div style={layout === 'wide' ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 } : { display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {list.slice(0, limit).map(c => <ChargeCard key={c.id} c={c} selected={desk && c.id === selId} onClick={() => onOpen(c.id)}/>)}
+          </div>
 
           {list.length > limit && (
             <button type="button" onClick={() => setLimit(limit + PAGE * 2)} style={{ font: 'inherit', minHeight: 44, color: t.blue, fontSize: 16, fontWeight: 600, background: t.card, border: 0, borderRadius: 14, cursor: 'pointer' }}>
@@ -86,6 +98,21 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
         </>
       )}
     </Screen>
+  );
+
+  if (!desk) return content;
+  return (
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', gap: 20 }}>
+      <div style={{ width: 420, flex: 'none', overflowY: 'auto' }}>{content}</div>
+      <div key={selId} style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
+        {selId
+          ? <ChargeDetail id={selId}
+              onPrev={() => selIdx > 0 && setSelId(list[selIdx - 1].id)}
+              onNext={() => selIdx >= 0 && selIdx < list.length - 1 && setSelId(list[selIdx + 1].id)}
+              hasPrev={selIdx > 0} hasNext={selIdx >= 0 && selIdx < list.length - 1}/>
+          : <Screen detail><Empty icon={ICONS.bolt} title={tr('Nessuna ricarica selezionata')} text={tr('Scegli una ricarica dall’elenco.')}/></Screen>}
+      </div>
+    </div>
   );
 }
 
@@ -99,12 +126,15 @@ function Legend({ color, v, sub }) {
   );
 }
 
-function ChargeCard({ c, onClick }) {
+function ChargeCard({ c, selected, onClick }) {
   const t = useT();
   const dc = isDC(c);
   const fg = dc ? t.orange : t.green, bg = dc ? t.orangeBg : t.greenBg;
   return (
-    <div role="button" data-charge-id={c.id} onClick={onClick} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: t.card, borderRadius: 20, padding: '14px 16px', cursor: 'pointer' }}>
+    <div role="button" data-charge-id={c.id} onClick={onClick} style={{
+      display: 'flex', flexDirection: 'column', gap: 10, background: t.card, borderRadius: 20, padding: '14px 16px', cursor: 'pointer',
+      boxShadow: selected ? `0 0 0 2px ${t.blue}` : 'none',
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ width: 38, height: 38, borderRadius: 12, background: bg, color: fg, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={dc ? ICONS.bolt : ICONS.house}/></svg>
@@ -125,13 +155,14 @@ function ChargeCard({ c, onClick }) {
 
 const median = (a) => { const s = a.filter(Boolean).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
 
-function ChargeDetail({ id, onBack }) {
+function ChargeDetail({ id, onBack, onPrev, onNext, hasPrev, hasNext }) {
   const t = useT();
   const c = (window.TM_CHARGES || []).find(x => x.id === id);
   const [det, setDet] = React.useState(null);
   const [err, setErr] = React.useState(null);
 
   React.useEffect(() => {
+    setDet(null); setErr(null);
     loadChargeDetail(tmReadConfig().carId, id).then(setDet).catch(e => setErr(String(e.message || e)));
   }, [id]);
 
@@ -153,13 +184,16 @@ function ChargeDetail({ id, onBack }) {
 
   return (
     <Screen detail>
-      <BackLink label={tr('Ricariche')} onClick={onBack}/>
+      {onBack && <BackLink label={tr('Ricariche')} onClick={onBack}/>}
       <div style={{ padding: '0 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 10 }}>
         <div style={{ minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>{c.where}</h1>
           <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{dayLabel(c._date)} · {c.time} – {hhmm(c._end)}</div>
         </div>
-        <span style={{ padding: '5px 10px', borderRadius: 12, background: bg, color: fg, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>{dc ? 'DC' : 'AC'} · {tr('Completata')}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {onPrev && <NavArrows onPrev={onPrev} onNext={onNext} hasPrev={hasPrev} hasNext={hasNext}/>}
+          <span style={{ padding: '5px 10px', borderRadius: 12, background: bg, color: fg, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>{dc ? 'DC' : 'AC'} · {tr('Completata')}</span>
+        </div>
       </div>
 
       <Card label={tr('Energia caricata')}>

@@ -13,6 +13,7 @@ const signed = (v, dec = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtN(Math.a
 
 function StatsScreen({ api, metric, setMetric }) {
   const t = useT();
+  const layout = useLayout();
   const drives = window.TM_DRIVES || [];
   const loading = !drives.length && api.historyStatus !== 'live';
   const U = tmUnits();
@@ -61,9 +62,10 @@ function StatsScreen({ api, metric, setMetric }) {
             </div>
           </Card>
 
-          <ConsumptionScatter title={tr('Consumo vs temperatura')} pts={tempPts} unitX={U.temp} eff={U.eff} effMax={320 / U.kmPer} color={t.blue} fmtX={(x) => `${x < 0 ? '−' : ''}${fmtN(Math.abs(x))}°`}/>
-          <ConsumptionScatter title={tr('Consumo vs velocità')} pts={speedPts} unitX={U.speed} eff={U.eff} effMax={320 / U.kmPer} color={t.orange} fmtX={(x) => `${fmtN(x)} ${U.speed}`}/>
-
+          <div style={layout === 'desk' ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 } : { display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <ConsumptionScatter title={tr('Consumo vs temperatura')} pts={tempPts} unitX={U.temp} eff={U.eff} effMax={320 / U.kmPer} color={t.blue} fmtX={(x) => `${x < 0 ? '−' : ''}${fmtN(Math.abs(x))}°`}/>
+            <ConsumptionScatter title={tr('Consumo vs velocità')} pts={speedPts} unitX={U.speed} eff={U.eff} effMax={320 / U.kmPer} color={t.orange} fmtX={(x) => `${fmtN(x)} ${U.speed}`}/>
+          </div>
           {cov && cov.odo > 0 && (
             <Card label={tr('Copertura dei dati')} style={{ padding: '16px 18px', gap: 10 }}>
               <CardHead title={tr('Copertura TeslaMate')} right={<span style={{ fontSize: 26, fontWeight: 700 }}>{fmtN(cov.pct, 1)}%</span>}/>
