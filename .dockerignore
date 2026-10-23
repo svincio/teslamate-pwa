@@ -1,5 +1,8 @@
 *
 !nginx.conf
+!package.json
+!package-lock.json
+!build.js
 !pwa.html
 !config.js
 !manifest.json
