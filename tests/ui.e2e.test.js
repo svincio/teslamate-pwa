@@ -320,21 +320,22 @@ test('CSV export: every drive/charge of the period, Excel-friendly', async () =>
     }).then(() => page.waitForFunction(() => window.__csv, { timeout: 5000 })).then(() => page.evaluate(() => window.__csv));
 
     await tab(page, 'Viaggi');
-    const drives = await page.$$eval('[data-drive-id]', els => els.length);
+    // the list shows 60 cards at a time; the export has the whole period, as the summary says
+    const drives = await page.$eval('section[aria-label="Riepilogo periodo"]', el => Number(el.innerText.match(/(\d+)\s*\n\s*viaggi/)[1]));
     const d = await grab();
     const lines = d.text.replace(/^\uFEFF/, '').split('\r\n');
     assert.match(d.name, /^viaggi-.*\.csv$/);
     assert.equal(d.bom, '239,187,191', 'UTF-8 BOM for Excel');
     assert.match(lines[0], /^Inizio;Fine;Da;A;Distanza \(/);
-    assert.ok(drives > 0 && lines.length === drives + 1, `one row per drive (${drives} cards, ${lines.length - 1} rows)`);
+    assert.ok(drives > 0 && lines.length === drives + 1, `one row per drive of the period (${drives} in the summary, ${lines.length - 1} rows)`);
     assert.match(lines[1], /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d;/);
 
     await tab(page, 'Ricariche');
-    const charges = await page.$$eval('[data-charge-id]', els => els.length);
+    const charges = await page.$eval('section[aria-label="Spesa"]', el => Number(el.innerText.match(/(\d+) ricariche/)[1]));
     const c = await grab();
     const cl = c.text.replace(/^\uFEFF/, '').split('\r\n');
     assert.match(c.name, /^ricariche-.*\.csv$/);
-    assert.ok(charges > 0 && cl.length === charges + 1, `one row per charge (${charges} cards, ${cl.length - 1} rows)`);
+    assert.ok(charges > 0 && cl.length === charges + 1, `one row per charge of the period (${charges} in the summary, ${cl.length - 1} rows)`);
   });
 });
 
