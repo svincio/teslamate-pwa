@@ -6,7 +6,7 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 const puppeteer = require('puppeteer-core');
 
-const PORT = 8123; // dedicated test port, avoids clashing with a dev server on 8000
+const PORT = Number(process.env.TEST_PORT) || 8123; // dedicated test port, avoids clashing with a dev server on 8000
 const BASE_URL = `http://localhost:${PORT}/pwa.html`;
 
 const CHROME_CANDIDATES = [

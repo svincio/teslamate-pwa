@@ -2,6 +2,7 @@
 
 function StatusScreen({ api, go }) {
   const t = useT();
+  const U = tmUnits();
   const car = window.TM_CAR || {};
   const st = window.TM_STATS || {};
   const ch = car.charging;
@@ -48,8 +49,8 @@ function StatusScreen({ api, go }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', textAlign: 'center', borderTop: `0.5px solid ${t.line}`, paddingTop: 14 }}>
             <BigIconStat icon={<><rect x="2.5" y="7" width="17" height="10" rx="2.5"/><rect x="4.5" y="9" width={Math.max(1, 12 * (car.battery || 0) / 100)} height="6" rx="1" fill={t.blue} stroke="none"/><path d="M21.5 10.5v3" strokeLinecap="round"/></>}
               v={fmtN(car.battery)} unit="%" label={tr('Batteria')}/>
-            <BigIconStat icon={<path d="M4 17a8 8 0 1 1 16 0 M12 17l3.5-4.5" strokeLinecap="round"/>} v={fmtN(car.range)} unit="km" label={tr('Autonomia')}/>
-            <BigIconStat icon={<path d="M5 19L9 5M19 19L15 5M12 7v2M12 12v2M12 17v2" strokeLinecap="round"/>} v={fmtN(car.odometer)} unit="km" label={tr('Odometro')}/>
+            <BigIconStat icon={<path d="M4 17a8 8 0 1 1 16 0 M12 17l3.5-4.5" strokeLinecap="round"/>} v={fmtN(car.range)} unit={U.dist} label={tr('Autonomia')}/>
+            <BigIconStat icon={<path d="M5 19L9 5M19 19L15 5M12 7v2M12 12v2M12 17v2" strokeLinecap="round"/>} v={fmtN(car.odometer)} unit={U.dist} label={tr('Odometro')}/>
           </div>
         </Card>
 
@@ -85,10 +86,10 @@ function StatusScreen({ api, go }) {
             <button type="button" onClick={() => go('stats')} style={{ font: 'inherit', fontSize: 15, color: t.blue, background: 'none', border: 0, minHeight: 44, margin: '-12px 0', padding: 0, cursor: 'pointer' }}>{tr('Statistiche ›')}</button>
           </div>
           <Grid cols={2} style={{ gap: '14px 12px' }}>
-            <Stat size={24} v={fmtN(st.monthKm)} unit="km" label={tr('{n} viaggi', { n: fmtN(st.monthTrips) })}/>
-            <Stat size={24} v={st.monthEff ? fmtN(st.monthEff) : '—'} unit="Wh/km" label={tr('consumo medio')}/>
+            <Stat size={24} v={fmtN(st.monthKm)} unit={U.dist} label={tr('{n} viaggi', { n: fmtN(st.monthTrips) })}/>
+            <Stat size={24} v={st.monthEff ? fmtN(st.monthEff) : '—'} unit={U.eff} label={tr('consumo medio')}/>
             <Stat size={24} v={fmtN(st.monthKwh)} unit="kWh" label={tr('{n} ricariche', { n: fmtN(st.monthCharges) })} color={t.green}/>
-            <Stat size={24} v={fmtEur(st.monthCost)} unit="€" label={tr('costo')}/>
+            <Stat size={24} v={fmtMoney(st.monthCost)} label={tr('costo')}/>
           </Grid>
         </Card>
       </div>
