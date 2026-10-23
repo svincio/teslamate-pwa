@@ -282,6 +282,8 @@ function DriveDetail({ id, onBack, onPrev, onNext, hasPrev, hasNext }) {
         </div>
       </Card>
 
+      <IdleLine type="drive" id={d.id}/>
+
       <div style={layout === 'desk' ? { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 } : { display: 'flex', flexDirection: 'column', gap: 14 }}>
         {charts.map(c => (
           <Card key={c.title} label={c.title} style={{ padding: '14px 16px 12px', gap: 8 }}>
