@@ -173,6 +173,15 @@ function openings(cs) {
   ];
 }
 
+// Tyre pressures (already in TeslaMate's unit: bar or psi) with the car's own soft warnings; null when not reported.
+function tyres(t, unit) {
+  const out = { unit: unit === 'psi' ? 'psi' : 'bar' };
+  for (const k of ['fl', 'fr', 'rl', 'rr']) {
+    out[k] = { v: safeNum(pick(t, `tpms_pressure_${k}`)), warn: pick(t, `tpms_soft_warning_${k}`) === true };
+  }
+  return ['fl', 'fr', 'rl', 'rr'].some(k => out[k].v > 0) ? out : null;
+}
+
 function normalizeCar(carRaw, statusRaw, fallback) {
   const carObj = pick(carRaw, 'car', 'cars.0') || carRaw || {};
   const s      = pick(statusRaw, 'status') || statusRaw || {};
@@ -230,6 +239,7 @@ function normalizeCar(carRaw, statusRaw, fallback) {
     trim:        TRIMS[trim] || trim,
     locked:      !!pick(cstat, 'locked'),
     open:        openings(cstat),
+    tyres:       tyres(pick(s, 'tpms_details') || {}, pick(statusRaw, 'units.unit_of_pressure')),
     stateSince:  pick(s, 'state_since') || null,
     lat:         safeNum(pick(geo, 'latitude', 'location.latitude')) || null,
     lng:         safeNum(pick(geo, 'longitude', 'location.longitude')) || null,

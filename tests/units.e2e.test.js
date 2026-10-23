@@ -27,6 +27,7 @@ test('miles, °F and USD: labels follow TeslaMate units and config.js currency',
     const status = await text();
     assert.match(status, /\d\s*mi\s*\n\s*Odometer/);
     assert.match(status, /\$\d/, 'month cost in dollars');
+    assert.match(status, /42\s*psi\s*\n\s*Front left/, 'tyres in psi');
     await tab('Trips');
     const trips = await text();
     assert.match(trips, /mph/); assert.match(trips, /avg\. Wh\/mi/);
