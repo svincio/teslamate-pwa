@@ -43,6 +43,9 @@ window.TMConfig = {
   // "space" (1 234,5). Each device can override it in Altro/More → This device.
   numbers: "auto",
 
+  // Theme: "auto" (the system setting), "light" or "dark". Each device can override it in Altro/More → This device.
+  theme: "auto",
+
 
   // Optional: price per kWh (in `currency`) used to estimate charge cost when TeslaMate's own cost
   // tracking isn't configured (i.e. the API returns cost: 0). Leave null to

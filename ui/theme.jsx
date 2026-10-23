@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // Theme tokens from the Claude Design restyling (docs/design/), iOS-like.
-// The theme follows the iPhone setting (prefers-color-scheme): no in-app switch.
+// Theme: chosen on this device (Altro → Questo dispositivo), else config.js `theme`, else the system setting.
 // ─────────────────────────────────────────────────────────────
 
 const TM_THEMES = {
@@ -41,7 +41,13 @@ function useSystemTheme() {
     mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
   }, [mq]);
-  const t = dark ? TM_THEMES.dark : TM_THEMES.light;
+  const forced = tmChoice('theme', ['light', 'dark']);
+  const t = (forced ? forced === 'dark' : dark) ? TM_THEMES.dark : TM_THEMES.light;
+  // Page background and browser bar follow too (the CSS only knows the system setting).
+  React.useEffect(() => {
+    document.documentElement.style.background = document.body.style.background = t.bg;
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', t.bg));
+  }, [t]);
   return t;
 }
 

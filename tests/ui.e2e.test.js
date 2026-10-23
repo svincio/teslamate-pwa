@@ -263,6 +263,22 @@ test('theme follows the system setting (dark)', async () => {
   });
 });
 
+test('theme chosen on this device wins over the system setting', async () => {
+  await withBrowser(async (page) => {
+    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
+    await gotoAppReady(page);
+    await tab(page, 'Altro');
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+      page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === 'Scuro').click()),
+    ]);
+    await page.waitForFunction(() => document.querySelector('section[aria-label="Auto"]'), { timeout: 30000 });
+    const bg = await page.evaluate(() => getComputedStyle(document.querySelector('section[aria-label="Auto"]')).backgroundColor);
+    assert.equal(bg, 'rgb(28, 28, 30)', 'dark cards on a light system');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(0, 0, 0)');
+  });
+});
+
 test('reopening the app shows the cached data even if the API is unreachable', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);
