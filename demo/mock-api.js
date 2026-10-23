@@ -194,7 +194,7 @@ const strip = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => !k.sta
 // TM_MOCK_CARS=2 adds a second, newer car (to try the car choice in Altro → Questo dispositivo).
 const CARS = [
   { car_id: 1, name: 'Silver Arrow', model: '3', trim: '74D', vin: '5YJ3E7EB0LF000001', seed: 42, odo0: 24300, charging: true },
-  { car_id: 2, name: 'Red Comet', model: 'Y', trim: '74D', vin: '7SAYGDEE0PF000002', seed: 7, odo0: 3100, charging: false },
+  { car_id: 2, name: 'Red Comet', model: 'Y', trim: '74D', vin: '7SAYGDEE0PF000002', seed: 7, odo0: 3100, charging: false, trunkOpen: true }, // shows the warnings
 ];
 const UNITS = { unit_of_length: 'km', unit_of_temperature: 'C' };
 const DATA = {};
@@ -214,7 +214,7 @@ function raw(url) {
   const D = DATA[C.car_id], km = D.last.odo, CAR = { car_id: C.car_id, car_name: C.name };
   if (p === 'cars/1/status') return { data: { car: CAR, units: UNITS, status: {
     display_name: CAR.car_name, state: C.charging ? 'charging' : 'asleep', state_since: iso(D.now - 47 * 60000), odometer: round(km, 1),
-    car_status: { healthy: true, locked: true, sentry_mode: false, windows_open: false, doors_open: false, trunk_open: false, frunk_open: false, is_user_present: false },
+    car_status: { healthy: true, locked: true, sentry_mode: false, windows_open: false, doors_open: false, trunk_open: !!C.trunkOpen, frunk_open: false, is_user_present: false },
     car_details: { model: C.model, trim_badging: C.trim },
     car_geodata: { geofence: 'Home', location: { latitude: P.home.lat, longitude: P.home.lng }, latitude: P.home.lat, longitude: P.home.lng },
     car_versions: { version: D.updates[0].version, update_available: false, update_version: '' },

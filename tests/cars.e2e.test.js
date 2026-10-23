@@ -38,6 +38,7 @@ test('car chosen on this device: its data, its cache, back to the default', asyn
     await leaveTo(page, 'Stato');
     await ready(page, 'Red Comet');
     assert.match(await text(page), /Model Y/);
+    assert.match(await text(page), /Aperto\s*\n\s*Bagagliaio/, 'open trunk warning');
     assert.notEqual(await page.evaluate(() => window.TM_CAR.odometer), firstOdo, 'the other car\'s data');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await ready(page, 'Red Comet');                            // the choice survives a restart
