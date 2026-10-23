@@ -206,7 +206,7 @@ function ChargeDetail({ id, onBack, onPrev, onNext, hasPrev, hasNext }) {
       </div>
 
       <Card label={tr('Energia caricata')}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: fg }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 6, color: fg }}>
           <span style={{ fontSize: 46, fontWeight: 700, letterSpacing: -1 }}>+{fmtN(c.kwh, 1)}</span><span style={{ fontSize: 18, fontWeight: 600 }}>kWh</span>
         </div>
         <SocBar mode="charge" from={c.from} to={c.to} accent={fg} height={10} big/>

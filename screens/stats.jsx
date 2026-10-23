@@ -120,10 +120,19 @@ function IdleCard() {
 
 // The stop (≥ 12 h) that ended with this trip/charge, if any.
 function IdleLine({ type, id }) {
+  const t = useT();
   const s = (window.TM_IDLE || []).find(x => x.next.type === type && x.next.id === id);
   if (!s) return null;
   const value = `${fmtMin(s.hours * 60)} · −${fmtN(s.lostPct)}%${s.kwh != null ? ` · ${fmtN(s.kwh, 1)} kWh` : ''}`;
-  return <ListCard label={tr('Consumo da fermo')}><Row label={type === 'drive' ? tr('Sosta prima di questo viaggio') : tr('Sosta prima di questa ricarica')} value={value} last/></ListCard>;
+  // label above value, both wrapping: a Row would overflow on a narrow screen with large text
+  return (
+    <ListCard label={tr('Consumo da fermo')}>
+      <div style={{ padding: '12px 0', overflowWrap: 'anywhere' }}>
+        <div style={{ fontSize: 16 }}>{type === 'drive' ? tr('Sosta prima di questo viaggio') : tr('Sosta prima di questa ricarica')}</div>
+        <div style={{ fontSize: 15, color: t.sub }}>{value}</div>
+      </div>
+    </ListCard>
+  );
 }
 
 function ConsumptionScatter({ title, pts, unitX, eff, effMax, color, fmtX }) {
