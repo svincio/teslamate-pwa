@@ -279,12 +279,30 @@ test('theme chosen on this device wins over the system setting', async () => {
   });
 });
 
+test('12-hour clock chosen on this device', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);                                   // Italian device: 24 h
+    await waitHistory(page);
+    await tab(page, 'Viaggi');
+    const time = () => page.$eval('[data-drive-id]', el => el.innerText.split('\n')[1]);
+    assert.match(await time(), /^\d{2}:\d{2}$/);
+    await tab(page, 'Altro');
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+      page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '12 h').click()),
+    ]);
+    await waitHistory(page);
+    await tab(page, 'Viaggi');
+    assert.match(await time(), /^\d{1,2}:\d{2}\s?[AP]M$/i);
+  });
+});
+
 test('reopening the app shows the cached data even if the API is unreachable', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);
     await waitHistory(page);
     await page.waitForFunction(() => {
-      try { return !!JSON.parse(localStorage.getItem('tm.pwa.cache.v2.it')).history; } catch { return false; }
+      try { return !!JSON.parse(localStorage.getItem('tm.pwa.cache.v2.it.24')).history; } catch { return false; }
     }, { timeout: 180000 });
     await page.setRequestInterception(true);
     page.on('request', (r) => (r.url().includes('/api/v1/') ? r.abort() : r.continue()));

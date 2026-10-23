@@ -121,7 +121,7 @@ function sectionStats(p) {
   return { km, min, kwh, up, down, vmax, avg: min ? km / (min / 60) : 0, whkm: km ? (kwh * 1000) / km : 0, soc: a.battery - b.battery, from: a.date, to: b.date };
 }
 
-const hms = (iso) => iso ? new Date(iso).toTimeString().slice(0, 8) : '—';
+const hms = (iso) => fmtClock(iso, true);
 
 // Two-thumb slider over the trace indexes (native inputs: real touch handling and accessibility).
 function RangePick({ n, sel, onChange, label }) {

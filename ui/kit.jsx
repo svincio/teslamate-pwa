@@ -22,7 +22,7 @@ const fmtMin = (m) => {
   if (m < 60) return `${m} min`;
   return m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${Math.floor(m / 60)} h`;
 };
-const hhmm = (iso) => iso ? new Date(iso).toTimeString().slice(0, 5) : '—';
+const hhmm = (iso) => fmtClock(iso);
 const sameDay = (a, b) => a.toDateString() === b.toDateString();
 
 // "Oggi", "Ieri · 18 ottobre", "12 ottobre", "12 ottobre 2025"

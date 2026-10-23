@@ -95,12 +95,7 @@ const fmtDay = (iso) => {
   return `${d.getDate()} ${MESI3[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : ''}`;
 };
 
-const fmtTime = (iso) => {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toTimeString().slice(0, 5);
-};
+const fmtTime = (iso) => fmtClock(iso);
 
 const fmtDur = (minutes) => {
   const m = Math.round(safeNum(minutes));
@@ -622,7 +617,7 @@ function applyHistory(d) {
 // while fresh data loads. _raw is dropped (only used while building; keeps it < 1 MB).
 // shortcut: day labels ("Oggi"/"Ieri") and 14-day buckets are precomputed, so cached
 // ones can be off by a day until the refresh lands (seconds); fine unless offline for long.
-const TM_CACHE_KEY = `tm.pwa.cache.v2.${TM_LANG}`; // bump when the cached shape changes; per language (labels are precomputed)
+const TM_CACHE_KEY = `tm.pwa.cache.v2.${TM_LANG}.${TM_H12 ? 12 : 24}`; // bump when the cached shape changes; per language and clock (labels are precomputed)
 const stripRaw = (arr) => (arr || []).map(({ _raw, ...x }) => x);
 
 function tmReadCache() {
