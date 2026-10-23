@@ -290,6 +290,22 @@ test('desktop: sidebar and master-detail navigation for drives and charges', asy
   });
 });
 
+test('rotation: iOS leaves the page scrolled by the status bar height; it is put back to 0', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
+    await tab(page, 'Viaggi');
+    await clickText(page, 'Anno');
+    // the page can be scrolled under overflow: hidden (what iOS does after a rotation)
+    await page.evaluate(() => { document.documentElement.style.height = '200%'; document.documentElement.style.overflow = 'visible'; window.scrollTo(0, 59); });
+    assert.equal(await page.evaluate(() => window.scrollY), 59);
+    await page.setViewport({ width: 844, height: 390 });
+    await page.setViewport({ width: 430, height: 900 });
+    await page.waitForFunction(() => window.scrollY === 0, { timeout: 5000 });
+    await tab(page, 'Ricariche');
+    assert.match(await bodyText(page), /Spesa/);
+  });
+});
+
 test('large text collapses statistic grids to one column on a narrow screen', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);
