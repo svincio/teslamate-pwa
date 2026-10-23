@@ -13,9 +13,10 @@ test.after(() => { serverProcess?.kill(); });
 
 const text = (page) => page.evaluate(() => document.body.innerText);
 const tab = async (page, l) => { await page.evaluate((x) => [...document.querySelectorAll('nav button')].find(b => b.innerText.trim() === x).click(), l); await new Promise(r => setTimeout(r, 300)); };
-const choose = (page, label) => Promise.all([
+const press = (page, label) => page.evaluate((l) => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === l).click(), label);
+const leaveTo = (page, label) => Promise.all([ // leaving Altro applies the choice
   page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-  page.evaluate((l) => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === l).click(), label),
+  page.evaluate((l) => setTimeout(() => [...document.querySelectorAll('nav button')].find(b => b.innerText.trim() === l).click(), 0), label),
 ]);
 // Polls with plain evaluates: waitForFunction can hang when the app reloads itself meanwhile.
 async function ready(page, name) {
@@ -33,14 +34,16 @@ test('car chosen on this device: its data, its cache, back to the default', asyn
     const firstOdo = await page.evaluate(() => window.TM_CAR.odometer);
     await tab(page, 'Altro');
     assert.match(await text(page), /Auto da mostrare/);
-    await choose(page, 'Red Comet');
+    await press(page, 'Red Comet');
+    await leaveTo(page, 'Stato');
     await ready(page, 'Red Comet');
     assert.match(await text(page), /Model Y/);
     assert.notEqual(await page.evaluate(() => window.TM_CAR.odometer), firstOdo, 'the other car\'s data');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await ready(page, 'Red Comet');                            // the choice survives a restart
     await tab(page, 'Altro');
-    await choose(page, 'Predefinita');
+    await press(page, 'Predefinita');
+    await leaveTo(page, 'Stato');
     await ready(page, 'Silver Arrow');
   });
 });

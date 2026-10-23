@@ -42,6 +42,13 @@ test('app boots to live data, no mock leftovers, no NaN/undefined', async () => 
   });
 });
 
+const press = (page, label) => page.evaluate((l) => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === l).click(), label);
+// Leaving Altro applies pending settings with one reload, straight into that tab (click deferred: the page goes away).
+const leaveTo = (page, label) => Promise.all([
+  page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+  page.evaluate((l) => setTimeout(() => [...document.querySelectorAll('nav button')].find(b => b.innerText.trim() === l).click(), 0), label),
+]);
+
 test('English UI when the browser is not Italian', async () => {
   await withBrowser(async (page) => {
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
@@ -63,17 +70,16 @@ test('language chosen on this device overrides the system one and survives a res
   await withBrowser(async (page) => {
     await gotoAppReady(page);                                   // device in Italian
     await tab(page, 'Altro');
-    const choose = (label) => Promise.all([ // the choice reloads the app
-      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-      page.evaluate((l) => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === l).click(), label),
-    ]);
-    await choose('English');
+    await press(page, 'English');
+    assert.equal(await page.evaluate(() => document.documentElement.lang), 'it', 'nothing reloads while in Altro');
+    await leaveTo(page, 'Stato');
     await page.waitForFunction(() => document.body.innerText.includes('Battery'), { timeout: 30000 }); // reloaded in English
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.body.innerText.includes('Battery'), { timeout: 30000 });
     assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
     await tab(page, 'More');
-    await choose('Auto');
+    await press(page, 'Auto');
+    await leaveTo(page, 'Status');
     await page.waitForFunction(() => document.body.innerText.includes('Batteria'), { timeout: 30000 }); // back to the device language
   });
 });
@@ -84,10 +90,8 @@ test('number format chosen on this device: separators change, the language does 
     const odo = () => page.evaluate(() => ((document.body.innerText.match(/([\d.,\u202f\u00a0 ]+)\s*km\s*\n\s*Odometro/) || [])[1] || '').trim());
     assert.match(await odo(), /^\d{1,3}(\.\d{3})+$/);
     await tab(page, 'Altro');
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-      page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '1,234.5').click()),
-    ]);
+    await press(page, '1,234.5');
+    await leaveTo(page, 'Stato');
     await page.waitForFunction(() => document.body.innerText.includes('Odometro'), { timeout: 30000 });
     assert.match(await odo(), /^\d{1,3}(,\d{3})+$/, 'thousands with a comma, UI still Italian');
   });
@@ -268,10 +272,8 @@ test('theme chosen on this device wins over the system setting', async () => {
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
     await gotoAppReady(page);
     await tab(page, 'Altro');
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-      page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === 'Scuro').click()),
-    ]);
+    await press(page, 'Scuro');
+    await leaveTo(page, 'Stato');
     await page.waitForFunction(() => document.querySelector('section[aria-label="Auto"]'), { timeout: 30000 });
     const bg = await page.evaluate(() => getComputedStyle(document.querySelector('section[aria-label="Auto"]')).backgroundColor);
     assert.equal(bg, 'rgb(28, 28, 30)', 'dark cards on a light system');
@@ -287,13 +289,31 @@ test('12-hour clock chosen on this device', async () => {
     const time = () => page.$eval('[data-drive-id]', el => el.innerText.split('\n')[1]);
     assert.match(await time(), /^\d{2}:\d{2}$/);
     await tab(page, 'Altro');
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-      page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '12 h').click()),
-    ]);
+    await press(page, '12 h');
+    await leaveTo(page, 'Viaggi');                              // lands on Viaggi
+    await waitHistory(page);
+    assert.match(await time(), /^\d{1,2}:\d{2}\s?[AP]M$/i);
+  });
+});
+
+test('several settings changed in Altro: one reload when leaving it, into the chosen tab', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
     await waitHistory(page);
     await tab(page, 'Viaggi');
-    assert.match(await time(), /^\d{1,2}:\d{2}\s?[AP]M$/i);
+    await press(page, 'Anno');                                  // a filter that must survive the reload
+    await tab(page, 'Altro');
+    let navs = 0;
+    page.on('framenavigated', (f) => { if (f === page.mainFrame()) navs++; });
+    for (const l of ['English', '12 h', 'Scuro']) await press(page, l);
+    await new Promise(r => setTimeout(r, 500));
+    assert.equal(navs, 0, 'no reload while in Altro');
+    assert.match(await bodyText(page), /Si applicano quando esci da Altro/);
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('tm.pwa.prefs'))), { lang: 'en', clock: '12', theme: 'dark' }, 'all three saved');
+    await leaveTo(page, 'Viaggi');
+    await page.waitForFunction(() => document.querySelector('h1') && document.querySelector('h1').innerText === 'Trips', { timeout: 30000 });
+    assert.equal(navs, 1, 'exactly one reload');
+    assert.equal(await page.$eval('button[aria-pressed="true"]', b => b.innerText.trim()), 'Year', 'period filter kept');
   });
 });
 
