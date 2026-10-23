@@ -23,11 +23,12 @@ function tmReadConfig() {
   const c = (typeof window !== 'undefined' && window.TMConfig) || {};
   return {
     apiBase: String(c.apiBase || '/api/v1').replace(/\/+$/, ''),
-    carId:   String(c.carId || 1),
+    carId:   String(TM_PREFS.car || c.carId || 1), // the car chosen on this device wins
     token:   String(c.token || ''),
     refreshSeconds: Number.isFinite(c.refreshSeconds) ? c.refreshSeconds : 60,
     priceAcPerKwh: Number.isFinite(c.priceAcPerKwh) ? c.priceAcPerKwh : null,
     priceDcPerKwh: Number.isFinite(c.priceDcPerKwh) ? c.priceDcPerKwh : null,
+    currency: String(c.currency || 'EUR').toUpperCase(),
   };
 }
 
@@ -94,12 +95,7 @@ const fmtDay = (iso) => {
   return `${d.getDate()} ${MESI3[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : ''}`;
 };
 
-const fmtTime = (iso) => {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toTimeString().slice(0, 5);
-};
+const fmtTime = (iso) => fmtClock(iso);
 
 const fmtDur = (minutes) => {
   const m = Math.round(safeNum(minutes));
@@ -147,6 +143,16 @@ async function loadCharges(id, params = {}) {
 async function loadBatteryHealth(id) {
   try { return await tmFetch(`cars/${id}/battery-health`); }
   catch { return null; } // added in v1.22 — may not exist on older builds
+}
+
+// ─── Units ──────────────────────────────────────────────────
+// teslamateapi already converts to TeslaMate's settings (km|mi, C|F) and says which in `units`:
+// the app only picks the labels. Elevation stays in metres (teslamateapi never converts it).
+function tmUnits() {
+  const c = window.TM_CAR || {};
+  const mi = c.unitLength === 'mi';
+  return { mi, dist: mi ? 'mi' : 'km', speed: mi ? 'mph' : 'km/h', eff: mi ? 'Wh/mi' : 'Wh/km',
+    temp: c.unitTemp === 'F' ? '°F' : '°C', kmPer: mi ? 0.62137119223733 : 1 };
 }
 
 // ─── Normalizers ────────────────────────────────────────────
@@ -214,6 +220,8 @@ function normalizeCar(carRaw, statusRaw, fallback) {
     lat:         safeNum(pick(geo, 'latitude', 'location.latitude')) || null,
     lng:         safeNum(pick(geo, 'longitude', 'location.longitude')) || null,
     geofence:    geofenceName || null,
+    unitLength:  pick(statusRaw, 'units.unit_of_length') || 'km',
+    unitTemp:    pick(statusRaw, 'units.unit_of_temperature') || 'C',
     // Shown when plugged in; minutesToFull comes as hours from teslamateapi.
     charging: plug ? {
       active:         chargingNow,
@@ -241,7 +249,8 @@ function normalizeDrives(driveRows) {
     const km        = safeNum(pick(r, 'odometer_details.odometer_distance', 'distance', 'distance_km'));
     const durMin    = safeNum(pick(r, 'duration_min', 'duration_minutes'));
     const kwh       = safeNum(pick(r, 'energy_consumed_net', 'consumption_kwh', 'energy_used_kwh', 'consumption.kwh'));
-    const eff       = Math.round(safeNum(pick(r, 'consumption_net'))) || (kwh && km ? Math.round((kwh * 1000) / km) : 0);
+    // energy/distance, not consumption_net: teslamateapi converts that one wrongly to miles (×0.62 instead of ×1.61)
+    const eff       = kwh && km ? Math.round((kwh * 1000) / km) : Math.round(safeNum(pick(r, 'consumption_net')));
     const avgSpeed  = Math.round(safeNum(pick(r, 'speed_avg', 'speed_avg_kmh'))) || (km && durMin ? Math.round((km / durMin) * 60) : 0);
 
     return {
@@ -529,9 +538,16 @@ function fmtRelativeDay(ts) {
 async function tmLoadCar(id) {
   const [cars, status] = await Promise.all([
     loadCars().catch(() => null),
-    loadStatus(id),
+    loadStatus(id).catch(e => e),
   ]);
-  return normalizeCar(cars, status, window.TM_CAR || {});
+  const list = pick(cars, 'cars') || [];
+  const idOf = (c) => String(pick(c, 'car_id', 'id'));
+  // The car chosen on this device is gone from TeslaMate: forget the choice instead of failing forever.
+  if (TM_PREFS.car && list.length && !list.some(c => idOf(c) === String(id))) { tmSetPref('car', null); location.reload(); }
+  if (status instanceof Error) throw status;
+  const car = normalizeCar({ car: list.find(c => idOf(c) === String(id)) || null }, status, window.TM_CAR || {});
+  car.cars = list.map(c => ({ id: idOf(c), name: pick(c, 'name') || `#${idOf(c)}` })); // for the car choice
+  return car;
 }
 
 // Drives: last 12 months (the window every stat/chart uses) — filtering by date
@@ -608,7 +624,7 @@ function applyHistory(d) {
 // while fresh data loads. _raw is dropped (only used while building; keeps it < 1 MB).
 // shortcut: day labels ("Oggi"/"Ieri") and 14-day buckets are precomputed, so cached
 // ones can be off by a day until the refresh lands (seconds); fine unless offline for long.
-const TM_CACHE_KEY = `tm.pwa.cache.v2.${TM_LANG}`; // bump when the cached shape changes; per language (labels are precomputed)
+const TM_CACHE_KEY = `tm.pwa.cache.v2.${TM_LANG}.${TM_H12 ? 12 : 24}.car${tmReadConfig().carId}`; // bump when the cached shape changes; per language and clock (labels are precomputed) and per car
 const stripRaw = (arr) => (arr || []).map(({ _raw, ...x }) => x);
 
 function tmReadCache() {
@@ -723,7 +739,7 @@ async function tmProbe() {
 
 // ─── Expose ────────────────────────────────────────────────
 Object.assign(window, {
-  tmReadConfig, tmFetch, tmLoadCar, tmLoadHistory, tmProbe, loadChargeDetail, tmDrivesSince, tmLoadDrivesRange,
+  tmReadConfig, tmUnits, tmFetch, tmLoadCar, tmLoadHistory, tmProbe, loadChargeDetail, tmDrivesSince, tmLoadDrivesRange,
 
   loadDriveDetail,
   useTeslaMate,

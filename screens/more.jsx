@@ -1,10 +1,10 @@
 // Altro + Salute batteria + Luoghi + Aggiornamenti
 // (spec: docs/design/screens/09-altro.html, 10-salute-batteria.html)
 
-const APP_VERSION = '0.7.0';
+const APP_VERSION = '0.8.0';
 const fmtDate = (iso) => { if (!iso) return '—'; const d = new Date(iso); return `${d.getDate()} ${MESI3[d.getMonth()]} ${d.getFullYear()}`; };
 
-function MoreScreen({ api, open }) {
+function MoreScreen({ api, open, pending, onPrefChange }) {
   const t = useT();
   const st = window.TM_STATS || {};
   const ups = window.TM_UPDATES || [];
@@ -30,6 +30,21 @@ function MoreScreen({ api, open }) {
         <UpdatesList items={ups.slice(0, 4)}/>
       </>}
 
+      <SectionLabel>{tr('Questo dispositivo')}</SectionLabel>
+      <ListCard label={tr('Questo dispositivo')}>
+        {(window.TM_CAR?.cars || []).length > 1 && <PrefRow onChange={onPrefChange} label={tr('Auto da mostrare')} pref="car"
+          options={[{ value: 'auto', label: tr('Predefinita') }, ...window.TM_CAR.cars.map(c => ({ value: c.id, label: c.name }))]}/>}
+        <PrefRow onChange={onPrefChange} label={tr('Lingua')} pref="lang" options={[{ value: 'auto', label: 'Auto' }, { value: 'it', label: 'Italiano' }, { value: 'en', label: 'English' }]}/>
+        <PrefRow onChange={onPrefChange} label={tr('Formato dei numeri')} pref="numbers" options={[{ value: 'auto', label: 'Auto' },
+          { value: 'comma', label: '1.234,5' }, { value: 'dot', label: '1,234.5' }, { value: 'space', label: '1 234,5' }]}/>
+        <PrefRow onChange={onPrefChange} label={tr("Formato dell'ora")} pref="clock" options={[{ value: 'auto', label: 'Auto' }, { value: '24', label: '24 h' }, { value: '12', label: '12 h' }]}/>
+        <PrefRow onChange={onPrefChange} label={tr('Tema')} pref="theme" options={[{ value: 'auto', label: 'Auto' }, { value: 'light', label: tr('Chiaro') }, { value: 'dark', label: tr('Scuro') }]} last/>
+      </ListCard>
+      <p style={{ margin: '4px 16px', fontSize: 13, lineHeight: 1.4, color: t.sub }}>
+        {pending && <b style={{ color: t.blue, fontWeight: 600 }}>{tr('Si applicano quando esci da Altro.')} </b>}
+        {tr('Valgono solo su questo dispositivo. Auto: segue config.js sul server, se lo imposta, altrimenti il dispositivo.')}
+      </p>
+
       <SectionLabel>{tr('Impostazioni')}</SectionLabel>
       <ListCard label={tr('Connessione e app')}>
         <Row label="TeslaMateAPI" value={<span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: conn[1] }}><span style={{ width: 8, height: 8, borderRadius: 4, background: conn[1] }}/>{conn[0]}</span>}/>
@@ -41,9 +56,22 @@ function MoreScreen({ api, open }) {
       </ListCard>
       {(api.error || api.historyError) && <p style={{ margin: '4px 16px', fontSize: 13, color: t.red, wordBreak: 'break-word' }}>{[api.error, api.historyError && tr('Storico: {err}', { err: api.historyError })].filter(Boolean).join(' · ')}</p>}
       <p style={{ margin: '4px 16px', fontSize: 13, lineHeight: 1.4, color: t.sub }}>
-        {tr("Indirizzo, autenticazione e auto si configurano in config.js sul server. Il tema segue l'impostazione dell'iPhone.")}
+        {tr('Indirizzo e autenticazione si configurano in config.js sul server.')}
       </p>
     </Screen>
+  );
+}
+
+// A per-device setting: label above, segmented choice below; saved at once, applied when leaving Altro.
+function PrefRow({ label, pref, options, last, onChange }) {
+  const t = useT();
+  const [value, setValue] = React.useState(TM_PREFS[pref] || 'auto');
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0', borderBottom: last ? 'none' : `0.5px solid ${t.line}` }}>
+      <div style={{ fontSize: 16 }}>{label}</div>
+      {React.createElement(options.length > 4 ? Chips : Seg, { small: true, label, options, value, // many cars: chips wrap
+        onChange: (v) => { tmSetPref(pref, v); setValue(v); onChange(); } })}
+    </div>
   );
 }
 
@@ -106,6 +134,7 @@ function binnedTrend(pts, key, bins = 12) {
 
 function HealthDetail({ onBack }) {
   const t = useT();
+  const U = tmUnits();
   const st = window.TM_STATS || {};
   const car = window.TM_CAR || {};
   const cap = window.TM_CAPACITY_POINTS || [];
@@ -114,7 +143,7 @@ function HealthDetail({ onBack }) {
 
   const charts = [
     { title: tr('Capacità'), note: 'kWh', color: t.blue, pts: cap, key: 'kwh' },
-    { title: tr('Autonomia massima'), note: tr('km al 100%'), color: t.purple, pts: rng, key: 'range' },
+    { title: tr('Autonomia massima'), note: tr('{u} al 100%', { u: U.dist }), color: t.purple, pts: rng, key: 'range' },
   ].filter(c => c.pts.length >= 5).map(c => {
     const ys = c.pts.map(p => p[c.key]).sort((a, b) => a - b);
     const q = (f) => ys[Math.floor(f * (ys.length - 1))];
@@ -127,7 +156,7 @@ function HealthDetail({ onBack }) {
       <BackLink label={tr('Altro')} onClick={onBack}/>
       <div style={{ padding: '0 4px' }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>{tr('Salute batteria')}</h1>
-        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{tr('Stima da {n} ricariche · {km} km', { n: fmtN(cap.length), km: fmtN(car.odometer) })}</div>
+        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{tr('Stima da {n} ricariche · {dist}', { n: fmtN(cap.length), dist: `${fmtN(car.odometer)} ${U.dist}` })}</div>
       </div>
 
       <Card label={tr('Stato di salute')}>
@@ -147,7 +176,7 @@ function HealthDetail({ onBack }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', borderTop: `0.5px solid ${t.line}`, paddingTop: 14 }}>
           <Stat size={20} v={fmtN(st.cyclesEq)} label={tr('cicli equivalenti')}/>
           <Stat size={20} v={`${fmtN(st.dcPercent)}%`} label={tr('ricariche DC')}/>
-          <Stat size={20} v={`${fmtN(st.rangeKm)} km`} label={tr('autonomia max')}/>
+          <Stat size={20} v={`${fmtN(st.rangeKm)} ${U.dist}`} label={tr('autonomia max')}/>
         </div>
       </Card>
 
@@ -156,14 +185,14 @@ function HealthDetail({ onBack }) {
           <CardHead title={c.title} note={c.note}/>
           <div style={{ display: 'flex', gap: 6 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <Scatter grid="lines" r={2.5} label={tr('{title} in funzione dei km percorsi', { title: c.title })} pts={c.pts.map(p => ({ x: p.km, y: p[c.key] }))}
+              <Scatter grid="lines" r={2.5} label={tr('{title} in funzione della distanza percorsa', { title: c.title })} pts={c.pts.map(p => ({ x: p.km, y: p[c.key] }))}
                 color={c.color} xMin={0} xMax={c.xMax} yMin={c.yMin} yMax={c.yMax} trend={c.trend} trendColor={c.color}/>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: 11, color: t.sub, height: 130 }}>
               <span>{fmtN(c.yMax)}</span><span>{fmtN((c.yMin + c.yMax) / 2)}</span><span>{fmtN(c.yMin)}</span>
             </div>
           </div>
-          <AxisLabels items={['0 km', fmtN(c.xMax / 2), `${fmtN(c.xMax)} km`]} style={{ paddingRight: 36 }}/>
+          <AxisLabels items={[`0 ${U.dist}`, fmtN(c.xMax / 2), `${fmtN(c.xMax)} ${U.dist}`]} style={{ paddingRight: 36 }}/>
         </Card>
       ))}
     </Screen>

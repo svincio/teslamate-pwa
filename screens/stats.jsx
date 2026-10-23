@@ -1,11 +1,13 @@
 // Statistiche (spec: docs/design/screens/08-statistiche.html)
 
-const METRICS = [
-  { value: 'km',  label: 'km',    kind: tr('Distanza totale'), unit: 'km',    src: 'TM_MONTH_KM',   sum: true },
-  { value: 'kwh', label: 'kWh',   kind: tr('Energia caricata'), unit: 'kWh',  src: 'TM_MONTH_KWH',  sum: true },
-  { value: 'eur', label: '€',     kind: tr('Costo totale'),    unit: '€',     src: 'TM_MONTH_COST', sum: true, dec: 2 },
-  { value: 'eff', label: 'Wh/km', kind: tr('Consumo medio'),   unit: 'Wh/km', src: 'TM_MONTH_EFF',  sum: false },
+// Labels depend on TeslaMate's units, known only once /status has landed.
+const metrics = (U) => [
+  { value: 'km',  label: U.dist, kind: tr('Distanza totale'),  unit: U.dist, src: 'TM_MONTH_KM',   sum: true },
+  { value: 'kwh', label: 'kWh',  kind: tr('Energia caricata'), unit: 'kWh',  src: 'TM_MONTH_KWH',  sum: true },
+  { value: 'eur', label: CUR,    kind: tr('Costo totale'),     money: true,  src: 'TM_MONTH_COST', sum: true },
+  { value: 'eff', label: U.eff,  kind: tr('Consumo medio'),    unit: U.eff,  src: 'TM_MONTH_EFF',  sum: false },
 ];
+const fmtMetric = (m, v) => m.money ? fmtMoney(v) : `${fmtN(v)} ${m.unit}`;
 
 const signed = (v, dec = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtN(Math.abs(v), dec)}`;
 
@@ -13,6 +15,8 @@ function StatsScreen({ api, metric, setMetric }) {
   const t = useT();
   const drives = window.TM_DRIVES || [];
   const loading = !drives.length && api.historyStatus !== 'live';
+  const U = tmUnits();
+  const METRICS = metrics(U);
   const m = METRICS.find(x => x.value === metric) || METRICS[0];
   const vals = window[m.src] || [];
   const labels = window.TM_MONTH_LABELS || [];
@@ -40,16 +44,16 @@ function StatsScreen({ api, metric, setMetric }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <div style={{ fontSize: 13, color: t.sub }}>{m.kind}</div>
-                <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -0.5 }}>{fmtN(m.sum ? tot : avg, m.dec || 0)} <span style={{ fontSize: 16, color: t.sub, fontWeight: 500 }}>{m.unit}</span></div>
+                <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -0.5 }}>{m.money ? fmtMoney(tot) : <>{fmtN(m.sum ? tot : avg)} <span style={{ fontSize: 16, color: t.sub, fontWeight: 500 }}>{m.unit}</span></>}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 13, color: t.sub }}>{tr('Media/mese')}</div>
-                <div style={{ fontSize: 17, fontWeight: 600 }}>{fmtN(avg, m.dec || 0)} {m.unit}</div>
+                <div style={{ fontSize: 17, fontWeight: 600 }}>{fmtMetric(m, avg)}</div>
               </div>
             </div>
             <div role="img" aria-label={tr('Barre mensili')} style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 5, alignItems: 'end', height: 130 }}>
               {vals.map((v, i) => (
-                <div key={i} title={`${labels[i]}: ${fmtN(v, m.dec || 0)} ${m.unit}`} style={{ height: `${Math.max(1, Math.round((v / max) * 100))}%`, background: i === vals.length - 1 ? t.blue : t.blueSoft, borderRadius: '4px 4px 2px 2px' }}/>
+                <div key={i} title={`${labels[i]}: ${fmtMetric(m, v)}`} style={{ height: `${Math.max(1, Math.round((v / max) * 100))}%`, background: i === vals.length - 1 ? t.blue : t.blueSoft, borderRadius: '4px 4px 2px 2px' }}/>
               ))}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 5, marginTop: -8, fontSize: 10, color: t.sub, textAlign: 'center' }}>
@@ -57,15 +61,15 @@ function StatsScreen({ api, metric, setMetric }) {
             </div>
           </Card>
 
-          <ConsumptionScatter title={tr('Consumo vs temperatura')} pts={tempPts} unitX="°C" color={t.blue} fmtX={(x) => `${x < 0 ? '−' : ''}${fmtN(Math.abs(x))}°`}/>
-          <ConsumptionScatter title={tr('Consumo vs velocità')} pts={speedPts} unitX="km/h" color={t.orange} fmtX={(x) => `${fmtN(x)} km/h`}/>
+          <ConsumptionScatter title={tr('Consumo vs temperatura')} pts={tempPts} unitX={U.temp} eff={U.eff} effMax={320 / U.kmPer} color={t.blue} fmtX={(x) => `${x < 0 ? '−' : ''}${fmtN(Math.abs(x))}°`}/>
+          <ConsumptionScatter title={tr('Consumo vs velocità')} pts={speedPts} unitX={U.speed} eff={U.eff} effMax={320 / U.kmPer} color={t.orange} fmtX={(x) => `${fmtN(x)} ${U.speed}`}/>
 
           {cov && cov.odo > 0 && (
             <Card label={tr('Copertura dei dati')} style={{ padding: '16px 18px', gap: 10 }}>
               <CardHead title={tr('Copertura TeslaMate')} right={<span style={{ fontSize: 26, fontWeight: 700 }}>{fmtN(cov.pct, 1)}%</span>}/>
               <Bar pct={cov.pct} color={t.blue}/>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: t.sub }}>
-                <span>{tr('{n} km tracciati', { n: fmtN(cov.tracked) })}</span><span>{tr('{n} km odometro', { n: fmtN(cov.odo) })}</span>
+                <span>{tr('{n} {u} tracciati', { n: fmtN(cov.tracked), u: U.dist })}</span><span>{tr('{n} {u} odometro', { n: fmtN(cov.odo), u: U.dist })}</span>
               </div>
             </Card>
           )}
@@ -75,18 +79,18 @@ function StatsScreen({ api, metric, setMetric }) {
   );
 }
 
-function ConsumptionScatter({ title, pts, unitX, color, fmtX }) {
+function ConsumptionScatter({ title, pts, unitX, eff, effMax, color, fmtX }) {
   const t = useT();
   if (pts.length < 5) return null;
   const xs = pts.map(p => p.x).sort((a, b) => a - b);
   const q = (a, f) => a[Math.min(a.length - 1, Math.max(0, Math.floor(f * (a.length - 1))))];
   const xMin = Math.floor(q(xs, 0.01)), xMax = Math.ceil(q(xs, 0.99));
-  const yMin = 80, yMax = 320; // Wh/km: outside this range it's parking/short-trip noise
+  const yMin = effMax / 4, yMax = effMax; // 80-320 Wh/km: outside it's parking/short-trip noise
   const inRange = pts.filter(p => p.x >= xMin && p.x <= xMax && p.y >= yMin && p.y <= yMax);
   const fit = linFit(inRange);
   return (
     <Card label={title} style={{ padding: '14px 16px 12px', gap: 8 }}>
-      <CardHead title={title} note={fit ? `${signed(fit.slope)} Wh/km per ${unitX}` : ''}/>
+      <CardHead title={title} note={fit ? `${signed(fit.slope)} ${eff} per ${unitX}` : ''}/>
       <Scatter label={tr('{title}, punti per viaggio con linea di tendenza', { title })} pts={inRange} color={color}
         xMin={xMin} xMax={xMax} yMin={yMin} yMax={yMax}
         trend={fit ? [{ x: xMin, y: fit.at(xMin) }, { x: xMax, y: fit.at(xMax) }] : null}/>
