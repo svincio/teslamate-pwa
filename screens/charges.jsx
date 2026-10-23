@@ -102,9 +102,9 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
 
   if (!desk) return content;
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
-      <div style={{ width: 420, flex: 'none', position: 'sticky', top: 0 }}>{content}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', gap: 20 }}>
+      <div style={{ width: 420, flex: 'none', overflowY: 'auto' }}>{content}</div>
+      <div key={selId} style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
         {selId
           ? <ChargeDetail id={selId}
               onPrev={() => selIdx > 0 && setSelId(list[selIdx - 1].id)}

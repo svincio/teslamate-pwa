@@ -84,11 +84,11 @@ function DrivesScreen({ api, open, period, setPeriod }) {
 
   if (!desk) return content;
 
-  // shortcut: l'elenco e il dettaglio scorrono nella stessa pagina (nessun pannello a scroll indipendente)
+  // due pannelli con scroll indipendente, riempiono l'area del contenuto (scroller con position: relative)
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
-      <div style={{ width: 420, flex: 'none', position: 'sticky', top: 0 }}>{content}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', gap: 20 }}>
+      <div style={{ width: 420, flex: 'none', overflowY: 'auto' }}>{content}</div>
+      <div key={selId} style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
         {selId
           ? <DriveDetail id={selId}
               onPrev={() => selIdx > 0 && setSelId(list[selIdx - 1].id)}

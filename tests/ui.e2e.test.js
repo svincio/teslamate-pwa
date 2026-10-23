@@ -273,6 +273,14 @@ test('desktop: sidebar and master-detail navigation for drives and charges', asy
     assert.ok(driveCount > 1);
     assert.equal(await page.$$eval('button[aria-label="Successivo"]', els => els.length), 1);
     const before = await page.$$eval('h1', els => els.at(-1).innerText);
+    // the list scrolls on its own: the detail pane stays where it is
+    const panes = await page.evaluate(() => {
+      const list = document.querySelector('[data-drive-id]').closest('div[style*="overflow-y"]');
+      const detail = list.nextElementSibling;
+      list.scrollTop = 300;
+      return { listMoved: list.scrollTop > 0, detailScroll: detail.scrollTop, pageScroll: document.scrollingElement.scrollTop };
+    });
+    assert.ok(panes.listMoved && panes.detailScroll === 0 && panes.pageScroll === 0);
     await page.locator('button[aria-label="Successivo"]').click();
     await page.waitForFunction((old) => [...document.querySelectorAll('h1')].at(-1).innerText !== old, {}, before);
 
