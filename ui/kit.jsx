@@ -6,7 +6,13 @@
 
 const fmtN = (v, dec = 0) => (Number.isFinite(v) ? v : 0)
   .toLocaleString(TM_LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
-const fmtEur = (v) => fmtN(v, 2);
+// Currency from config.js (ISO code); TeslaMate stores costs without one. Intl puts the symbol where the locale wants it.
+const TM_MONEY = (() => {
+  try { return new Intl.NumberFormat(TM_LOCALE, { style: 'currency', currency: tmReadConfig().currency }); }
+  catch { return new Intl.NumberFormat(TM_LOCALE, { style: 'currency', currency: 'EUR' }); } // invalid code
+})();
+const fmtMoney = (v) => TM_MONEY.format(Number.isFinite(v) ? v : 0);
+const CUR = TM_MONEY.formatToParts(0).find(p => p.type === 'currency').value;
 const fmtMin = (m) => {
   m = Math.round(m || 0);
   if (m < 60) return `${m} min`;
@@ -578,7 +584,7 @@ function TabBar({ active, onChange }) {
 }
 
 Object.assign(window, {
-  fmtN, fmtEur, fmtMin, hhmm, dayLabel, dayShort, sinceLabel, agoLabel, linFit,
+  fmtN, fmtMoney, CUR, fmtMin, hhmm, dayLabel, dayShort, sinceLabel, agoLabel, linFit,
   PERIOD_KINDS, periodRange, inPeriod, PeriodBar,
   Screen, Title, Card, CardHead, BackLink, Stat, Grid, Divider, Seg, Chips, Bar, SocBar, Row, ListCard,
   SectionLabel, useWidth, LineChart, Scatter, AxisLabels, OsmMap, HistoryLoading, ErrorBanner, Empty,

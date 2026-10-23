@@ -196,7 +196,7 @@ const UNITS = { unit_of_length: 'km', unit_of_temperature: 'C' };
 let DATA = null;
 
 // → JSON-able response for /api/v1/... or null (404)
-function handle(url) {
+function raw(url) {
   if (!DATA || Date.now() - DATA.now > 6 * 3600000) DATA = build();
   const u = new URL(url, 'http://x');
   const p = u.pathname.replace(/^\/api\/v1\//, '').replace(/\/$/, '');
@@ -231,5 +231,31 @@ function handle(url) {
   if (p === 'cars/1/updates') return { data: { car: CAR, updates: D.updates } };
   return null;
 }
+
+// TM_MOCK_UNITS=imperial: what teslamateapi returns when TeslaMate is set to mi and °F
+// (same fields it converts, including its consumption_net ×0.62 slip).
+const KM = 0.62137119223733, F = (c) => round(c * 9 / 5 + 32, 1);
+function imperial(r) {
+  const d = r && r.data;
+  if (!d) return r;
+  const mi = (o, ...keys) => { for (const k of keys) if (o && typeof o[k] === 'number') o[k] = round(o[k] * KM, 2); };
+  const fa = (o, ...keys) => { for (const k of keys) if (o && typeof o[k] === 'number') o[k] = F(o[k]); };
+  const ranges = (o) => { mi(o.range_ideal, 'start_range', 'end_range', 'range_diff'); mi(o.range_rated, 'start_range', 'end_range', 'range_diff'); };
+  const drive = (x) => {
+    mi(x.odometer_details, 'odometer_start', 'odometer_end', 'odometer_distance'); mi(x, 'speed_avg', 'consumption_net');
+    x.speed_max = Math.round(x.speed_max * KM); ranges(x); fa(x, 'outside_temp_avg', 'inside_temp_avg');
+    for (const p of x.drive_details || []) { mi(p, 'odometer'); p.speed = Math.round(p.speed * KM); }
+  };
+  const charge = (x) => { ranges(x); mi(x, 'odometer'); fa(x, 'outside_temp_avg'); for (const p of x.charge_details || []) fa(p, 'outside_temp'); };
+  if (d.units) d.units = { ...d.units, unit_of_length: 'mi', unit_of_temperature: 'F' };
+  if (d.status) { mi(d.status, 'odometer'); mi(d.status.battery_details, 'est_battery_range', 'rated_battery_range', 'ideal_battery_range'); fa(d.status.climate_details, 'inside_temp', 'outside_temp'); }
+  (d.drives || []).forEach(drive); if (d.drive) drive(d.drive);
+  (d.charges || []).forEach(charge); if (d.charge) charge(d.charge);
+  if (d.battery_health) mi(d.battery_health, 'max_range', 'current_range');
+  return r;
+}
+
+// Deep copy first: nested objects are shared with the in-memory data and would be converted again on every call.
+const handle = (url) => (process.env.TM_MOCK_UNITS === 'imperial' ? imperial(JSON.parse(JSON.stringify(raw(url)))) : raw(url));
 
 module.exports = { handle, build };

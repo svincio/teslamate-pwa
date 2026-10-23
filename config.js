@@ -39,10 +39,14 @@ window.TMConfig = {
   lang: "auto",
 
 
-  // Optional: €/kWh used to estimate charge cost when TeslaMate's own cost
+  // Optional: price per kWh (in `currency`) used to estimate charge cost when TeslaMate's own cost
   // tracking isn't configured (i.e. the API returns cost: 0). Leave null to
   // just show whatever the API reports. AC = home/destination, DC = fast/Supercharger.
   priceAcPerKwh: null,
   priceDcPerKwh: null,
+
+  // Currency of the costs (ISO 4217 code: "EUR", "USD", "GBP", "CHF"…). TeslaMate stores costs without one.
+  // Distances and temperatures follow TeslaMate's own settings (km/mi, °C/°F): nothing to set here.
+  currency: "EUR",
 
 };

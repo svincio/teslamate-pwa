@@ -28,6 +28,7 @@ function tmReadConfig() {
     refreshSeconds: Number.isFinite(c.refreshSeconds) ? c.refreshSeconds : 60,
     priceAcPerKwh: Number.isFinite(c.priceAcPerKwh) ? c.priceAcPerKwh : null,
     priceDcPerKwh: Number.isFinite(c.priceDcPerKwh) ? c.priceDcPerKwh : null,
+    currency: String(c.currency || 'EUR').toUpperCase(),
   };
 }
 
@@ -149,6 +150,16 @@ async function loadBatteryHealth(id) {
   catch { return null; } // added in v1.22 — may not exist on older builds
 }
 
+// ─── Units ──────────────────────────────────────────────────
+// teslamateapi already converts to TeslaMate's settings (km|mi, C|F) and says which in `units`:
+// the app only picks the labels. Elevation stays in metres (teslamateapi never converts it).
+function tmUnits() {
+  const c = window.TM_CAR || {};
+  const mi = c.unitLength === 'mi';
+  return { mi, dist: mi ? 'mi' : 'km', speed: mi ? 'mph' : 'km/h', eff: mi ? 'Wh/mi' : 'Wh/km',
+    temp: c.unitTemp === 'F' ? '°F' : '°C', kmPer: mi ? 0.62137119223733 : 1 };
+}
+
 // ─── Normalizers ────────────────────────────────────────────
 // Tesla trim badges → readable names (unknown badges are shown as-is).
 const TRIMS = { '74D': 'Long Range AWD', '74': 'Long Range', '62': 'Mid Range', '50': 'Standard Range',
@@ -214,6 +225,8 @@ function normalizeCar(carRaw, statusRaw, fallback) {
     lat:         safeNum(pick(geo, 'latitude', 'location.latitude')) || null,
     lng:         safeNum(pick(geo, 'longitude', 'location.longitude')) || null,
     geofence:    geofenceName || null,
+    unitLength:  pick(statusRaw, 'units.unit_of_length') || 'km',
+    unitTemp:    pick(statusRaw, 'units.unit_of_temperature') || 'C',
     // Shown when plugged in; minutesToFull comes as hours from teslamateapi.
     charging: plug ? {
       active:         chargingNow,
@@ -241,7 +254,8 @@ function normalizeDrives(driveRows) {
     const km        = safeNum(pick(r, 'odometer_details.odometer_distance', 'distance', 'distance_km'));
     const durMin    = safeNum(pick(r, 'duration_min', 'duration_minutes'));
     const kwh       = safeNum(pick(r, 'energy_consumed_net', 'consumption_kwh', 'energy_used_kwh', 'consumption.kwh'));
-    const eff       = Math.round(safeNum(pick(r, 'consumption_net'))) || (kwh && km ? Math.round((kwh * 1000) / km) : 0);
+    // energy/distance, not consumption_net: teslamateapi converts that one wrongly to miles (×0.62 instead of ×1.61)
+    const eff       = kwh && km ? Math.round((kwh * 1000) / km) : Math.round(safeNum(pick(r, 'consumption_net')));
     const avgSpeed  = Math.round(safeNum(pick(r, 'speed_avg', 'speed_avg_kmh'))) || (km && durMin ? Math.round((km / durMin) * 60) : 0);
 
     return {
@@ -723,7 +737,7 @@ async function tmProbe() {
 
 // ─── Expose ────────────────────────────────────────────────
 Object.assign(window, {
-  tmReadConfig, tmFetch, tmLoadCar, tmLoadHistory, tmProbe, loadChargeDetail, tmDrivesSince, tmLoadDrivesRange,
+  tmReadConfig, tmUnits, tmFetch, tmLoadCar, tmLoadHistory, tmProbe, loadChargeDetail, tmDrivesSince, tmLoadDrivesRange,
 
   loadDriveDetail,
   useTeslaMate,

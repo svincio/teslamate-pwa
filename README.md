@@ -22,7 +22,8 @@ commands to the car.
 
 <sub>Screenshots taken with invented demo data.</sub>
 
-**Languages:** English and Italian (follows the browser, or set `lang` in `config.js`). **Units:** km and € only for now.
+**Languages:** English and Italian (follows the browser, or set `lang` in `config.js`).
+**Units:** km or miles and °C or °F, following TeslaMate's settings (elevation always in metres); currency set in `config.js`.
 
 ## Requirements
 
@@ -79,7 +80,8 @@ Copy [`config.js`](config.js), edit it and mount it as shown above:
 | `token` | `""` | TeslaMateAPI `API_TOKEN`. Not needed for read-only endpoints; it would be readable by anyone. |
 | `refreshSeconds` | `60` | Status polling interval while the app is open, `0` disables it |
 | `lang` | `"auto"` | `"auto"` (browser language), `"it"` or `"en"` |
-| `priceAcPerKwh`, `priceDcPerKwh` | `null` | €/kWh estimate when TeslaMate records no charge cost |
+| `priceAcPerKwh`, `priceDcPerKwh` | `null` | Price per kWh estimate when TeslaMate records no charge cost |
+| `currency` | `"EUR"` | ISO 4217 code of your costs (`USD`, `GBP`, `CHF`…) |
 
 Better: set the cost per kWh in TeslaMate's geofences, it is then used by Grafana too.
 
@@ -102,7 +104,8 @@ TM_API_HOST=teslamate.example.com node local-server.js   # http://localhost:8000
 
 `local-server.js` serves the files and proxies `/api/v1` to your TeslaMateAPI over HTTPS.
 Without a TeslaMate at hand, `TM_MOCK=1 node local-server.js` serves invented data instead
-(Milan area, about two years of trips and charges, see `demo/mock-api.js`).
+(Milan area, about two years of trips and charges, see `demo/mock-api.js`); add `TM_MOCK_UNITS=imperial`
+for miles and °F.
 
 End-to-end tests run a real Chrome (Google Chrome or Chromium installed) against your data or the demo data:
 

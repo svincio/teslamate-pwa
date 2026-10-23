@@ -1,7 +1,7 @@
 // Altro + Salute batteria + Luoghi + Aggiornamenti
 // (spec: docs/design/screens/09-altro.html, 10-salute-batteria.html)
 
-const APP_VERSION = '0.7.0';
+const APP_VERSION = '0.8.0';
 const fmtDate = (iso) => { if (!iso) return '—'; const d = new Date(iso); return `${d.getDate()} ${MESI3[d.getMonth()]} ${d.getFullYear()}`; };
 
 function MoreScreen({ api, open }) {
@@ -106,6 +106,7 @@ function binnedTrend(pts, key, bins = 12) {
 
 function HealthDetail({ onBack }) {
   const t = useT();
+  const U = tmUnits();
   const st = window.TM_STATS || {};
   const car = window.TM_CAR || {};
   const cap = window.TM_CAPACITY_POINTS || [];
@@ -114,7 +115,7 @@ function HealthDetail({ onBack }) {
 
   const charts = [
     { title: tr('Capacità'), note: 'kWh', color: t.blue, pts: cap, key: 'kwh' },
-    { title: tr('Autonomia massima'), note: tr('km al 100%'), color: t.purple, pts: rng, key: 'range' },
+    { title: tr('Autonomia massima'), note: tr('{u} al 100%', { u: U.dist }), color: t.purple, pts: rng, key: 'range' },
   ].filter(c => c.pts.length >= 5).map(c => {
     const ys = c.pts.map(p => p[c.key]).sort((a, b) => a - b);
     const q = (f) => ys[Math.floor(f * (ys.length - 1))];
@@ -127,7 +128,7 @@ function HealthDetail({ onBack }) {
       <BackLink label={tr('Altro')} onClick={onBack}/>
       <div style={{ padding: '0 4px' }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>{tr('Salute batteria')}</h1>
-        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{tr('Stima da {n} ricariche · {km} km', { n: fmtN(cap.length), km: fmtN(car.odometer) })}</div>
+        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{tr('Stima da {n} ricariche · {dist}', { n: fmtN(cap.length), dist: `${fmtN(car.odometer)} ${U.dist}` })}</div>
       </div>
 
       <Card label={tr('Stato di salute')}>
@@ -147,7 +148,7 @@ function HealthDetail({ onBack }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', borderTop: `0.5px solid ${t.line}`, paddingTop: 14 }}>
           <Stat size={20} v={fmtN(st.cyclesEq)} label={tr('cicli equivalenti')}/>
           <Stat size={20} v={`${fmtN(st.dcPercent)}%`} label={tr('ricariche DC')}/>
-          <Stat size={20} v={`${fmtN(st.rangeKm)} km`} label={tr('autonomia max')}/>
+          <Stat size={20} v={`${fmtN(st.rangeKm)} ${U.dist}`} label={tr('autonomia max')}/>
         </div>
       </Card>
 
@@ -156,14 +157,14 @@ function HealthDetail({ onBack }) {
           <CardHead title={c.title} note={c.note}/>
           <div style={{ display: 'flex', gap: 6 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <Scatter grid="lines" r={2.5} label={tr('{title} in funzione dei km percorsi', { title: c.title })} pts={c.pts.map(p => ({ x: p.km, y: p[c.key] }))}
+              <Scatter grid="lines" r={2.5} label={tr('{title} in funzione della distanza percorsa', { title: c.title })} pts={c.pts.map(p => ({ x: p.km, y: p[c.key] }))}
                 color={c.color} xMin={0} xMax={c.xMax} yMin={c.yMin} yMax={c.yMax} trend={c.trend} trendColor={c.color}/>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: 11, color: t.sub, height: 130 }}>
               <span>{fmtN(c.yMax)}</span><span>{fmtN((c.yMin + c.yMax) / 2)}</span><span>{fmtN(c.yMin)}</span>
             </div>
           </div>
-          <AxisLabels items={['0 km', fmtN(c.xMax / 2), `${fmtN(c.xMax)} km`]} style={{ paddingRight: 36 }}/>
+          <AxisLabels items={[`0 ${U.dist}`, fmtN(c.xMax / 2), `${fmtN(c.xMax)} ${U.dist}`]} style={{ paddingRight: 36 }}/>
         </Card>
       ))}
     </Screen>
