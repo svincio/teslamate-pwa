@@ -115,6 +115,23 @@ test('bottom tab bar switches between the 5 screens', async () => {
   });
 });
 
+test('monthly bars are buttons: selecting one reveals its real value and changes the highlight', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
+    await waitHistory(page);
+    await tab(page, 'Statistiche');
+    const before = await page.$eval('[data-month-value]', el => el.innerText);
+    const bars = await page.$$('[data-month-bars] button');
+    assert.equal(bars.length, 12);
+    await bars[0].click();
+    const after = await page.$eval('[data-month-value]', el => el.innerText);
+    assert.notEqual(after, before);
+    assert.equal(await page.$eval('[data-month-bars] button', el => el.getAttribute('aria-pressed')), 'true');
+    assert.equal(await page.$eval('[data-month-bars] button:last-child', el => el.getAttribute('aria-pressed')), 'false');
+    assert.equal(await page.$$eval('[aria-hidden="true"]', els => els.some(e => /km|Wh\/km/.test(e.innerText))), true, 'chart axes carry units');
+  });
+});
+
 test('Viaggi period control actually filters', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);
