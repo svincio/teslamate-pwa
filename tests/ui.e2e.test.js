@@ -319,6 +319,22 @@ test('several settings changed in Altro: one reload when leaving it, into the ch
   });
 });
 
+test('refresh: faster while charging or driving, and at once when the app comes back', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
+    const secs = (state) => page.evaluate((s) => { const c = window.TM_CAR, old = c.state, ch = c.charging;
+      c.state = s; c.charging = null; const n = tmRefreshSeconds(60); c.state = old; c.charging = ch; return n; }, state);
+    assert.equal(await secs('driving'), 15);
+    assert.equal(await secs('charging'), 15);
+    assert.equal(await secs('asleep'), 60);
+    let calls = 0;
+    page.on('request', (r) => { if (/\/cars\/\d+\/status/.test(r.url())) calls++; });
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await new Promise(r => setTimeout(r, 1500));
+    assert.ok(calls >= 1, 'status fetched when the app is visible again');
+  });
+});
+
 test('reopening the app shows the cached data even if the API is unreachable', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);

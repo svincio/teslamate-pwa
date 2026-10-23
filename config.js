@@ -32,7 +32,7 @@ window.TMConfig = {
   // endpoints AND the proxy doesn't already gate them). Leave empty otherwise.
   token: "",
 
-  // How often to poll the API while the app is open, in seconds.
+  // How often to poll the API while the app is open, in seconds (at most 15 while the car drives or charges).
   // Set to 0 to disable auto-refresh.
   refreshSeconds: 60,
 
