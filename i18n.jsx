@@ -1,15 +1,28 @@
 // ─────────────────────────────────────────────────────────────
-// UI language. config.js `lang`: 'auto' (default) | 'it' | 'en'.
-// auto = Italian when the browser is Italian, English otherwise.
+// UI language: the choice made on this device (Altro → Questo dispositivo), else config.js `lang`,
+// else the device language; English when that is not Italian.
 // The Italian text is the key: tr('Viaggi') → 'Trips'; a missing translation falls back to Italian.
 // Vars: tr('{n} viaggi', { n }) — an English entry can be [singular, plural], picked on n == 1.
 // ─────────────────────────────────────────────────────────────
 
-const TM_LANG = (() => {
-  const c = String((window.TMConfig && window.TMConfig.lang) || 'auto').toLowerCase();
-  if (c === 'it' || c === 'en') return c;
-  return /^it\b/i.test(navigator.language || '') ? 'it' : 'en';
-})();
+// Per-device settings, kept in localStorage: { lang?, numbers? }. Missing or 'auto' = not chosen here.
+const TM_PREFS_KEY = 'tm.pwa.prefs';
+const TM_PREFS = (() => { try { return JSON.parse(localStorage.getItem(TM_PREFS_KEY)) || {}; } catch { return {}; } })();
+function tmSetPref(key, value) { // texts are prepared at start-up: the caller reloads the app
+  const p = { ...TM_PREFS };
+  if (!value || value === 'auto') delete p[key]; else p[key] = value;
+  try { localStorage.setItem(TM_PREFS_KEY, JSON.stringify(p)); } catch {} // private mode: stays as is
+}
+// Device choice, else config.js, else null (= decide from the device itself).
+function tmChoice(key, allowed) {
+  for (const v of [TM_PREFS[key], window.TMConfig && window.TMConfig[key]]) {
+    const s = String(v || '').toLowerCase();
+    if (allowed.includes(s)) return s;
+  }
+  return null;
+}
+
+const TM_LANG = tmChoice('lang', ['it', 'en']) || (/^it\b/i.test(navigator.language || '') ? 'it' : 'en');
 const TM_LOCALE = TM_LANG === 'it' ? 'it-IT' : 'en-GB';
 document.documentElement.lang = TM_LANG;
 
@@ -103,9 +116,11 @@ const TM_EN = {
   'Impostazioni': 'Settings', 'Connessione e app': 'Connection and app', 'Ultimo aggiornamento': 'Last update',
   'Aggiorna ora': 'Refresh now', 'in corso…': 'in progress…', 'Aggiornamento automatico': 'Auto refresh',
   'ogni {n} s': 'every {n} s', 'spento': 'off', 'Installazione': 'Installed', 'Sulla schermata Home': 'On the Home Screen',
-  'Nel browser': 'In the browser', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
+  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
   "Indirizzo, autenticazione e auto si configurano in config.js sul server. Il tema segue l'impostazione dell'iPhone.":
-    'Server address, authentication, car and language are set in config.js on the server. The theme follows the system setting.',
+    'Server address, authentication and car are set in config.js on the server. The theme follows the system setting.',
+  'Valgono solo su questo dispositivo. Auto: segue config.js sul server, se lo imposta, altrimenti il dispositivo.':
+    'These apply to this device only. Auto: follows config.js on the server, if it sets one, otherwise the device.',
   'Nessun aggiornamento': 'No updates', 'Le versioni installate compariranno qui.': 'Installed versions will show up here.',
   'Dedotti da viaggi e ricariche degli ultimi 12 mesi': 'Derived from trips and charges of the last 12 months',
   'Luoghi': 'Places', '{n} visite': ['{n} visit', '{n} visits'], 'Nessun luogo': 'No places',
@@ -123,4 +138,4 @@ function tr(it, vars) {
   return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : s;
 }
 
-Object.assign(window, { TM_LANG, TM_LOCALE, MESI, MESI3, tr });
+Object.assign(window, { TM_PREFS, tmSetPref, tmChoice, TM_LANG, TM_LOCALE, MESI, MESI3, tr });

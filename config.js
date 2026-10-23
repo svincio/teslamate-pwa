@@ -35,7 +35,8 @@ window.TMConfig = {
   // Set to 0 to disable auto-refresh.
   refreshSeconds: 60,
 
-  // UI language: "auto" (Italian if the browser is Italian, English otherwise), "it" or "en".
+  // UI language: "auto" (the device language; English if not Italian), "it" or "en".
+  // Each device can override it in Altro/More → This device.
   lang: "auto",
 
 
