@@ -22,6 +22,7 @@ commands to the car.
 
 <sub>Screenshots taken with invented demo data.</sub>
 
+**Screens:** phone, tablet and desktop layouts (side bar and list + detail for trips and charges from 1100 px). Trips and charges of the selected period can be exported as CSV. Idle (parked) battery drain is worked out from stops of 12 h or more.
 **Languages:** English and Italian: follows the device, can be chosen per device in the app or set in `config.js`.
 **Units:** km or miles and °C or °F, following TeslaMate's settings (elevation always in metres); currency set in `config.js`.
 
@@ -91,8 +92,9 @@ Better: set the cost per kWh in TeslaMate's geofences, it is then used by Grafan
 
 ## How it works
 
-- `pwa.html` loads React, Babel standalone and Leaflet from unpkg (with SRI) and compiles the
-  `.jsx` files in the browser.
+- `pwa.html` loads React and Leaflet from unpkg (with SRI). In the Docker image the `.jsx` files are
+  compiled at build time (`build.js` → `dist/`), which makes the start about four times faster; when you
+  serve the source tree directly (development), Babel standalone compiles them in the browser.
 - `api.jsx` calls TeslaMateAPI, normalizes the data and caches the last state in `localStorage`,
   so the app opens instantly with the last known data.
 - `sw.js` caches the app shell; API calls always go to the network.
@@ -120,7 +122,11 @@ TM_MOCK=1 npm test                           # demo data
 node demo/screenshots.js                     # regenerates docs/screenshots/
 ```
 
-When you add or rename app files, update the list in `sw.js` (and bump `CACHE`) and in the `Dockerfile`.
+`npm run build` writes the compiled app to `dist/`; `ROOT=dist TM_MOCK=1 npm test` runs the same tests on it.
+GitHub Actions runs both on every pull request (`.github/workflows/test.yml`).
+
+When you add or rename app files, update the list in `sw.js` (and bump `CACHE`) and in the `Dockerfile`
+(the script list itself is read from `pwa.html`).
 
 ## License
 

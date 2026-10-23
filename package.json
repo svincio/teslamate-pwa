@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "description": "Read-only mobile PWA for TeslaMate, backed by teslamateapi",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "build": "node build.js"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-react": "^7.29.7",
     "puppeteer-core": "^25.7.0"
   },
   "repository": {

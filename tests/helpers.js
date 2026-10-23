@@ -12,10 +12,12 @@ const BASE_URL = `http://localhost:${PORT}/pwa.html`;
 const CHROME_CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser', // Linux (GitHub runners)
 ];
 
 function findChrome() {
   const fs = require('node:fs');
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
   for (const p of CHROME_CANDIDATES) if (fs.existsSync(p)) return p;
   throw new Error('No local Chrome found — install Google Chrome or set CHROME_PATH.');
 }
@@ -48,6 +50,7 @@ async function withBrowser(fn, { lang = 'it-IT' } = {}) {
   const browser = await puppeteer.launch({
     executablePath: findChrome(),
     headless: true,
+    args: process.env.CI ? ['--no-sandbox'] : [], // Ubuntu runners restrict the user namespaces Chrome's sandbox needs
   });
   try {
     const page = await browser.newPage();

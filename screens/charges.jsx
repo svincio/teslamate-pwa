@@ -49,6 +49,14 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
     lat: p.lat, lng: p.lng, color: p.dc > p.n / 2 ? t.orange : t.green, r: Math.min(13, 6 + Math.log2(p.n)),
   }));
 
+  const exportCsv = () => saveCsv(csvName(tr('ricariche'), r.label), [
+    tr('Inizio'), tr('Fine'), tr('Luogo'), tr('Tipo'), `${tr('Durata')} (min)`, `${tr('Energia aggiunta')} (kWh)`, `${tr('Energia dalla rete')} (kWh)`,
+    `${tr('Batteria inizio')} (%)`, `${tr('Batteria fine')} (%)`, `${tr('Potenza max')} (kW)`, `${tr('Costo')} (${tmReadConfig().currency})`,
+    `${tr('Prezzo')} (${tmReadConfig().currency}/kWh)`, `${tr('Autonomia aggiunta')} (${tmUnits().dist})`, `${tr('Temp. esterna')} (${tmUnits().temp})`,
+    `${tr('Odometro')} (${tmUnits().dist})`, tr('Latitudine'), tr('Longitudine'),
+  ], inP.map(c => [csvStamp(c._date), csvStamp(c._end), c.where, isDC(c) ? 'DC' : 'AC', c.durMin, c.kwh, c.kwhUsed || null,
+    c.from, c.to, c.rate, c.cost, c.pricePerKwh || null, c.rangeAdded, c.outsideTemp, c.odometer, c.lat, c.lng]));
+
   const content = (
     <Screen>
       <Title>{tr('Ricariche')}</Title>
@@ -68,6 +76,7 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
               <Legend color={t.green} v={fmtMoney(acCost)} sub={`AC · ${tr('Casa')} · ${fmtN(acKwh, acKwh < 10 ? 1 : 0)} kWh`}/>
               <Legend color={t.orange} v={fmtMoney(dcCost)} sub={`DC · Supercharger · ${fmtN(dcKwh, dcKwh < 10 ? 1 : 0)} kWh`}/>
             </Grid>
+            {inP.length > 0 && <ExportButton onClick={exportCsv}/>}
           </Card>
 
           {markers.length > 0 && (
@@ -197,7 +206,7 @@ function ChargeDetail({ id, onBack, onPrev, onNext, hasPrev, hasNext }) {
       </div>
 
       <Card label={tr('Energia caricata')}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: fg }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 6, color: fg }}>
           <span style={{ fontSize: 46, fontWeight: 700, letterSpacing: -1 }}>+{fmtN(c.kwh, 1)}</span><span style={{ fontSize: 18, fontWeight: 600 }}>kWh</span>
         </div>
         <SocBar mode="charge" from={c.from} to={c.to} accent={fg} height={10} big/>
@@ -245,6 +254,8 @@ function ChargeDetail({ id, onBack, onPrev, onNext, hasPrev, hasNext }) {
           </>
         ) : <div style={{ fontSize: 14, color: err ? t.red : t.sub, padding: '20px 0' }}>{err ? tr('Curva non disponibile: {err}', { err }) : det ? tr('Nessun dato di dettaglio') : tr('Carico la curva…')}</div>}
       </Card>
+
+      <IdleLine type="charge" id={c.id}/>
 
       <ListCard label={tr('Dati tecnici')}>
         <Row label={tr('Tensione')} value={volt ? `${fmtN(volt)} V` : '—'}/>

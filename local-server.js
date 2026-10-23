@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = Number(process.env.PORT) || 8000;
+const ROOT = process.env.ROOT ? path.resolve(process.env.ROOT) : __dirname; // ROOT=dist serves the compiled build
 // Host of your teslamateapi (HTTPS), e.g. TM_API_HOST=teslamate.example.com; TM_MOCK=1 serves invented data instead.
 const API_HOST = process.env.TM_API_HOST;
 const mock = process.env.TM_MOCK ? require('./demo/mock-api') : null;
@@ -28,7 +29,8 @@ http.createServer((req, res) => {
     req.pipe(upstream);
     return;
   }
-  const file = path.join(__dirname, req.url === '/' ? '/pwa.html' : req.url);
+  const pathname = decodeURIComponent(req.url.split('?')[0]); // a query string is not part of the file name
+  const file = path.join(ROOT, pathname === '/' ? '/pwa.html' : pathname);
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }
     res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });

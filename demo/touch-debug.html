@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it"><head>
+<meta charset="UTF-8">
+<!-- Same meta tags as pwa.html. Add to Home Screen, open, rotate landscape → portrait, tap the buttons. ?fix=scroll tries window.scrollTo(0,0) after rotation. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Touch debug">
+<title>Touch debug</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; width: 100%; overflow: hidden; background: #F2F2F7; font: 14px -apple-system, system-ui, sans-serif; }
+  #log { position: fixed; left: 0; right: 0; top: 0; padding: 8px; white-space: pre-wrap; font: 11px ui-monospace, Menlo, monospace; background: #fff; height: 60%; overflow: auto; }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px 6px calc(env(safe-area-inset-bottom, 0px) + 6px); background: #ddd; }
+  button { min-height: 56px; font: inherit; border: 0; border-radius: 12px; background: #0A66D6; color: #fff; }
+</style></head><body>
+<div id="log"></div>
+<nav><button>A</button><button>B</button><button>C</button></nav>
+<script>
+  const log = document.getElementById('log');
+  const fix = /fix=scroll/.test(location.search);
+  const state = (tag) => {
+    const v = window.visualViewport;
+    const r = document.querySelector('nav button').getBoundingClientRect();
+    log.textContent = `${tag} ${new Date().toLocaleTimeString()}\n` + [
+      `inner ${innerWidth}x${innerHeight}  client ${document.documentElement.clientWidth}x${document.documentElement.clientHeight}`,
+      `screen ${screen.width}x${screen.height}  orient ${screen.orientation && screen.orientation.type}`,
+      `visualViewport ${v && Math.round(v.width)}x${v && Math.round(v.height)}  offsetTop ${v && v.offsetTop}  pageTop ${v && v.pageTop}  scale ${v && v.scale}`,
+      `scrollY ${scrollY}  body.scrollTop ${document.body.scrollTop}  html.scrollTop ${document.documentElement.scrollTop}`,
+      `safe-area: ${getComputedStyle(document.documentElement).getPropertyValue('--sat')}`,
+      `button A rect: y ${Math.round(r.top)}..${Math.round(r.bottom)}`,
+      `fix=scroll: ${fix}`,
+    ].join('\n') + '\n\n' + log.dataset.taps;
+  };
+  log.dataset.taps = '';
+  addEventListener('touchstart', (e) => {
+    const t = e.touches[0], b = document.elementFromPoint(t.clientX, t.clientY);
+    log.dataset.taps = `tap clientY ${Math.round(t.clientY)} pageY ${Math.round(t.pageY)} screenY ${Math.round(t.screenY)} -> ${b && b.tagName}${b && b.textContent ? ' ' + b.textContent.slice(0, 3) : ''}\n` + log.dataset.taps;
+    state('touch');
+  }, { passive: true });
+  const turned = (e) => { setTimeout(() => { if (fix) scrollTo(0, 0); state(e); }, 500); };
+  addEventListener('orientationchange', () => turned('orientationchange'));
+  addEventListener('resize', () => turned('resize'));
+  document.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { log.dataset.taps = `CLICK ${b.textContent}\n` + log.dataset.taps; state('click'); }));
+  state('load');
+</script></body></html>

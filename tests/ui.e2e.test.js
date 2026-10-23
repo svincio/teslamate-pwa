@@ -290,6 +290,80 @@ test('desktop: sidebar and master-detail navigation for drives and charges', asy
   });
 });
 
+test('rotation: iOS leaves the page scrolled by the status bar height; it is put back to 0', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
+    await tab(page, 'Viaggi');
+    await clickText(page, 'Anno');
+    // the page can be scrolled under overflow: hidden (what iOS does after a rotation)
+    await page.evaluate(() => { document.documentElement.style.height = '200%'; document.documentElement.style.overflow = 'visible'; window.scrollTo(0, 59); });
+    assert.equal(await page.evaluate(() => window.scrollY), 59);
+    await page.setViewport({ width: 844, height: 390 });
+    await page.setViewport({ width: 430, height: 900 });
+    await page.waitForFunction(() => window.scrollY === 0, { timeout: 5000 });
+    await tab(page, 'Ricariche');
+    assert.match(await bodyText(page), /Spesa/);
+  });
+});
+
+test('CSV export: every drive/charge of the period, Excel-friendly', async () => {
+  await withBrowser(async (page) => {
+    await (await page.createCDPSession()).send('Browser.setDownloadBehavior', { behavior: 'deny' }); // the file itself is checked below
+    await gotoAppReady(page);
+    await waitHistory(page);
+    const grab = () => page.evaluate(async () => {
+      Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true }); // take the download path
+      window.__csv = null;
+      const make = URL.createObjectURL.bind(URL);
+      URL.createObjectURL = (f) => { f.arrayBuffer().then(b => { window.__csv = { name: f.name, bom: [...new Uint8Array(b.slice(0, 3))].join(), text: new TextDecoder('utf-8', { ignoreBOM: true }).decode(b) }; }); return make(f); };
+      document.querySelector('[data-export-csv]').click();
+    }).then(() => page.waitForFunction(() => window.__csv, { timeout: 5000 })).then(() => page.evaluate(() => window.__csv));
+
+    await tab(page, 'Viaggi');
+    const drives = await page.$$eval('[data-drive-id]', els => els.length);
+    const d = await grab();
+    const lines = d.text.replace(/^\uFEFF/, '').split('\r\n');
+    assert.match(d.name, /^viaggi-.*\.csv$/);
+    assert.equal(d.bom, '239,187,191', 'UTF-8 BOM for Excel');
+    assert.match(lines[0], /^Inizio;Fine;Da;A;Distanza \(/);
+    assert.ok(drives > 0 && lines.length === drives + 1, `one row per drive (${drives} cards, ${lines.length - 1} rows)`);
+    assert.match(lines[1], /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d;/);
+
+    await tab(page, 'Ricariche');
+    const charges = await page.$$eval('[data-charge-id]', els => els.length);
+    const c = await grab();
+    const cl = c.text.replace(/^\uFEFF/, '').split('\r\n');
+    assert.match(c.name, /^ricariche-.*\.csv$/);
+    assert.ok(charges > 0 && cl.length === charges + 1, `one row per charge (${charges} cards, ${cl.length - 1} rows)`);
+  });
+});
+
+test('idle drain: only parked stops of 12 h+ with no movement and no charge, battery lost over time', async () => {
+  await withBrowser(async (page) => {
+    await gotoAppReady(page);
+    const r = await page.evaluate(() => {
+      const dr = (id, s, e, from, to, o0, o1) => ({ id, _date: s, _end: e, socFrom: from, socTo: to, odoStart: o0, odoEnd: o1 });
+      const drives = [
+        dr(1, '2026-01-01T07:00:00Z', '2026-01-01T07:30:00Z', 90, 88, 1000, 1010),
+        dr(2, '2026-01-02T08:00:00Z', '2026-01-02T08:30:00Z', 85, 83, 1010, 1020),  // 24.5 h parked, 88 -> 85: lost 3
+        dr(3, '2026-01-02T12:00:00Z', '2026-01-02T12:30:00Z', 83, 82, 1020, 1030),  // 3.5 h: too short
+        dr(4, '2026-01-04T12:30:00Z', '2026-01-04T13:00:00Z', 90, 88, 1030, 1040),  // 48 h but 82 -> 90: a charge not logged
+        dr(5, '2026-01-06T13:00:00Z', '2026-01-06T13:30:00Z', 80, 78, 1100, 1110),  // 48 h, odometer jumped 60: moved unlogged
+      ];
+      const stops = computeIdle(drives, [], 75);
+      return { stops, sum: idleSummary(stops, new Date('2026-01-01'), new Date('2026-02-01'), 75), noCap: computeIdle(drives, [], 0)[0].kwh };
+    });
+    assert.equal(r.stops.length, 1);
+    assert.equal(r.stops[0].lostPct, 3);
+    assert.equal(r.stops[0].hours, 24.5);
+    assert.deepEqual(r.stops[0].next, { type: 'drive', id: 2 });
+    assert.equal(r.stops[0].kwh, 2.25);
+    assert.equal(Math.round(r.sum.pctPerDay * 100) / 100, 2.94);
+    assert.equal(Math.round(r.sum.kwhPerDay * 100) / 100, 2.2);
+    assert.equal(r.noCap, null, 'without the real capacity there is no kWh figure');
+  });
+});
+
 test('large text collapses statistic grids to one column on a narrow screen', async () => {
   await withBrowser(async (page) => {
     await gotoAppReady(page);

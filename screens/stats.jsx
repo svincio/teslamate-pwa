@@ -62,6 +62,8 @@ function StatsScreen({ api, metric, setMetric }) {
             </div>
           </Card>
 
+          <IdleCard/>
+
           <div style={layout === 'desk' ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 } : { display: 'flex', flexDirection: 'column', gap: 14 }}>
             <ConsumptionScatter title={tr('Consumo vs temperatura')} pts={tempPts} unitX={U.temp} eff={U.eff} effMax={320 / U.kmPer} color={t.blue} fmtX={(x) => `${x < 0 ? '−' : ''}${fmtN(Math.abs(x))}°`}/>
             <ConsumptionScatter title={tr('Consumo vs velocità')} pts={speedPts} unitX={U.speed} eff={U.eff} effMax={320 / U.kmPer} color={t.orange} fmtX={(x) => `${fmtN(x)} ${U.speed}`}/>
@@ -78,6 +80,58 @@ function StatsScreen({ api, metric, setMetric }) {
         </>
       )}
     </Screen>
+  );
+}
+
+// Battery lost while parked (api.jsx computeIdle): last 30 days and a monthly average for the last 12 months.
+function IdleCard() {
+  const t = useT();
+  const stops = window.TM_IDLE || [];
+  if (!stops.length) return null;
+  const cap = (window.TM_STATS || {}).capacityKwh || 0; // real capacity from /battery-health; without it only %
+  const now = new Date(), labels = window.TM_MONTH_LABELS || [];
+  const last = idleSummary(stops, new Date(now.getTime() - 30 * 86400000), new Date(now.getTime() + 86400000), cap);
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const x = idleSummary(stops, new Date(now.getFullYear(), now.getMonth() - 11 + i, 1), new Date(now.getFullYear(), now.getMonth() - 10 + i, 1), cap);
+    return cap ? (x.kwhPerDay || 0) : x.pctPerDay;
+  });
+  const max = Math.max(0.0001, ...months);
+  return (
+    <Card label={tr('Consumo da fermo')} data-idle style={{ padding: '14px 16px' }}>
+      <CardHead title={tr('Consumo da fermo')} note={tr('Soste negli ultimi 30 giorni: {n}', { n: fmtN(last.n) })}/>
+      {last.n ? (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -0.5 }}>
+            {cap ? fmtN(last.kwhPerDay, 2) : fmtN(last.pctPerDay, 1)} <span style={{ fontSize: 16, color: t.sub, fontWeight: 500 }}>{cap ? tr('kWh al giorno') : tr('% al giorno')}</span>
+          </div>
+          {cap > 0 && <div style={{ fontSize: 15, color: t.sub }}>{fmtN(last.pctPerDay, 1)} {tr('% al giorno')}</div>}
+        </div>
+      ) : <div style={{ fontSize: 14, color: t.sub }}>{tr('Nessuna sosta di almeno 12 h negli ultimi 30 giorni')}</div>}
+      <div role="img" aria-label={tr('Media mensile degli ultimi 12 mesi')} style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 5, alignItems: 'end', height: 70 }}>
+        {months.map((v, i) => (
+          <div key={i} title={`${labels[i] || ''}: ${cap ? fmtN(v, 2) + ' kWh' : fmtN(v, 1) + ' %'}`}
+            style={{ height: `${v ? Math.max(4, Math.round((v / max) * 100)) : 2}%`, background: i === 11 ? t.blue : t.blueSoft, borderRadius: '4px 4px 2px 2px' }}/>
+        ))}
+      </div>
+      <div style={{ fontSize: 12, color: t.sub, lineHeight: 1.35 }}>{tr('Soste di almeno 12 h senza spostamenti né ricariche. La batteria è registrata a passi dell’1%: conta la media, non la singola sosta.')}</div>
+    </Card>
+  );
+}
+
+// The stop (≥ 12 h) that ended with this trip/charge, if any.
+function IdleLine({ type, id }) {
+  const t = useT();
+  const s = (window.TM_IDLE || []).find(x => x.next.type === type && x.next.id === id);
+  if (!s) return null;
+  const value = `${fmtMin(s.hours * 60)} · −${fmtN(s.lostPct)}%${s.kwh != null ? ` · ${fmtN(s.kwh, 1)} kWh` : ''}`;
+  // label above value, both wrapping: a Row would overflow on a narrow screen with large text
+  return (
+    <ListCard label={tr('Consumo da fermo')}>
+      <div style={{ padding: '12px 0', overflowWrap: 'anywhere' }}>
+        <div style={{ fontSize: 16 }}>{type === 'drive' ? tr('Sosta prima di questo viaggio') : tr('Sosta prima di questa ricarica')}</div>
+        <div style={{ fontSize: 15, color: t.sub }}>{value}</div>
+      </div>
+    </ListCard>
   );
 }
 
@@ -101,4 +155,4 @@ function ConsumptionScatter({ title, pts, unitX, eff, effMax, color, fmtX }) {
   );
 }
 
-Object.assign(window, { StatsScreen });
+Object.assign(window, { StatsScreen, IdleLine });

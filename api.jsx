@@ -481,6 +481,39 @@ function computeStats(drives, charges, sohInfo) {
 
 }
 
+// ─── Idle drain (not provided by TeslaMateAPI: derived here) ─
+// Battery lost between two logged events (drive or charge) with no movement and no charge in between, over a stop of
+// at least IDLE_MIN_H. Each event gives the battery % at its start and end, in whole percents: one stop is ±1 %,
+// so the figure is meaningful as an average over many stops, not for a single one.
+const IDLE_MIN_H = 12;
+function computeIdle(drives, charges, capacityKwh) {
+  const ev = [];
+  for (const d of drives)  ev.push({ type: 'drive',  id: d.id, start: d._date, end: d._end, socStart: d.socFrom, socEnd: d.socTo, odoStart: d.odoStart, odoEnd: d.odoEnd });
+  for (const c of charges) ev.push({ type: 'charge', id: c.id, start: c._date, end: c._end, socStart: c.from,    socEnd: c.to,    odoStart: c.odometer, odoEnd: c.odometer });
+  const list = ev.filter(e => e.start && e.end && e.socStart > 0 && e.socEnd > 0)
+    .sort((a, b) => new Date(a.start) - new Date(b.start));
+  const stops = [];
+  for (let i = 1; i < list.length; i++) {
+    const a = list[i - 1], b = list[i];
+    const hours = (new Date(b.start) - new Date(a.end)) / 3600000;
+    const lost = a.socEnd - b.socStart;
+    if (hours < IDLE_MIN_H || lost < 0) continue; // gain = a charge that was not logged: not a drain
+    if (a.odoEnd > 0 && b.odoStart > 0 && Math.abs(b.odoStart - a.odoEnd) > 1) continue; // it moved without a logged drive
+    stops.push({
+      from: a.end, to: b.start, hours: Number(hours.toFixed(1)), lostPct: lost,
+      kwh: capacityKwh ? Number(((lost / 100) * capacityKwh).toFixed(2)) : null,
+      next: { type: b.type, id: b.id },
+    });
+  }
+  return stops;
+}
+// Average over the stops that started in [from, to): total lost / total hours, per day.
+function idleSummary(stops, from, to, capacityKwh) {
+  const s = (stops || []).filter(x => new Date(x.from) >= from && new Date(x.from) < to);
+  const hours = s.reduce((t, x) => t + x.hours, 0), lost = s.reduce((t, x) => t + x.lostPct, 0);
+  return { n: s.length, hours, pctPerDay: hours ? (lost / hours) * 24 : 0, kwhPerDay: hours && capacityKwh ? ((lost / 100) * capacityKwh / hours) * 24 : null };
+}
+
 function compute14dBuckets(items, key) {
   const now = new Date(); now.setHours(0, 0, 0, 0);
   const out = new Array(14).fill(0);
@@ -622,6 +655,7 @@ function buildHistory(drives, charges, sohRaw, updates) {
     rangePoints:    deriveRangePoints(chargesN),
     coverage:       computeCoverage(drivesN),
     updates:        normalizeUpdates(updates),
+    idle:           computeIdle(drivesN, chargesN, sohInfo.capacityKwh),
   };
 }
 
@@ -642,6 +676,7 @@ function applyHistory(d) {
     TM_RANGE_POINTS: d.rangePoints || [],
     TM_COVERAGE:    d.coverage || null,
     TM_UPDATES:     d.updates || [],
+    TM_IDLE:        d.idle || [],
   });
 }
 
