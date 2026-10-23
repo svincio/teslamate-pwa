@@ -232,7 +232,7 @@ function Title({ children, right, sub }) {
     <div style={{ padding: '0 4px 4px' }}>
       {multi && <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}><CarSwitch/></div>}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <h1 style={{ margin: 0, fontSize: 34, fontWeight: 700, letterSpacing: -0.4 }}>{children}</h1>
+        <h1 style={{ margin: 0, fontSize: 34, fontWeight: 700, letterSpacing: -0.4, minWidth: 0, overflowWrap: 'anywhere' }}>{children}</h1>
         {right && <span style={{ fontSize: 13, color: t.sub, paddingBottom: 6 }}>{right}</span>}
       </div>
       {sub && <div style={{ fontSize: 14, color: t.sub }}>{sub}</div>}
