@@ -42,6 +42,14 @@ function DrivesScreen({ api, open, period, setPeriod }) {
   const onOpen = desk ? setSelId : (id) => open({ type: 'drive', id });
   const selIdx = list.findIndex(d => d.id === selId);
 
+  const exportCsv = () => saveCsv(csvName(tr('viaggi'), r.label), [
+    tr('Inizio'), tr('Fine'), tr('Da'), tr('A'), `${tr('Distanza')} (${U.dist})`, `${tr('Durata')} (min)`, `${tr('Energia')} (kWh)`,
+    `${tr('Vel. media')} (${U.speed})`, `${tr('Vel. max')} (${U.speed})`, `${tr('Consumo')} (${U.eff})`,
+    `${tr('Batteria inizio')} (%)`, `${tr('Batteria fine')} (%)`, `${tr('Temp. esterna')} (${U.temp})`,
+    `${tr('Odometro inizio')} (${U.dist})`, `${tr('Odometro fine')} (${U.dist})`,
+  ], list.map(d => [csvStamp(d._date), csvStamp(d._end), d.from, d.to, Number((d.distance || d.km).toFixed(2)), d.durMin, d.kwh,
+    d.avgSpeed, d.speedMax, d.eff, d.socFrom, d.socTo, d.outsideTemp, d.odoStart, d.odoEnd]));
+
   const groups = [];
   for (const d of list.slice(0, limit)) {
     const day = dayLabel(d._date, false) === tr('Oggi') ? tr('Oggi') : dayLabel(d._date);
@@ -62,6 +70,7 @@ function DrivesScreen({ api, open, period, setPeriod }) {
               <Stat size={26} v={fmtN(list.length)} label={tr('viaggi')}/>
               <Stat size={26} v={km ? fmtN((kwh * 1000) / km) : '—'} label={tr('{u} medi', { u: U.eff })}/>
             </Grid>
+            {list.length > 0 && <ExportButton onClick={exportCsv}/>}
           </Card>
           {!list.length && <Empty icon={ICONS.car} title={tr('Nessun viaggio nel periodo')} text={tr('I viaggi registrati da TeslaMate compariranno qui.')}/>}
           {groups.map(g => (

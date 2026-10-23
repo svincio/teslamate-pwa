@@ -155,6 +155,16 @@ const TM_EN = {
   'SoH stimato': 'Estimated SoH', '{v} kWh attuali': '{v} kWh now', '{v} kWh originali': '{v} kWh original',
   'cicli equivalenti': 'equiv. cycles', 'ricariche DC': 'DC charges', 'autonomia max': 'max range',
   '{title} in funzione della distanza percorsa': '{title} by distance driven',
+  // Wide screens, CSV
+  'Precedente': 'Previous', 'Successivo': 'Next',
+  'Nessun viaggio selezionato': 'No trip selected', 'Scegli un viaggio dall’elenco.': 'Pick a trip from the list.',
+  'Nessuna ricarica selezionata': 'No charge selected', 'Scegli una ricarica dall’elenco.': 'Pick a charge from the list.',
+  'Esporta CSV': 'Export CSV', 'ricariche': 'charges',
+  'Inizio': 'Start', 'Fine': 'End', 'Da': 'From', 'A': 'To', 'Vel. max': 'Max speed',
+  'Batteria inizio': 'Battery start', 'Batteria fine': 'Battery end', 'Temp. esterna': 'Outside temp.',
+  'Odometro inizio': 'Odometer start', 'Odometro fine': 'Odometer end',
+  'Luogo': 'Place', 'Tipo': 'Type', 'Energia aggiunta': 'Energy added', 'Energia dalla rete': 'Energy from grid',
+  'Potenza max': 'Peak power', 'Costo': 'Cost', 'Prezzo': 'Price', 'Latitudine': 'Latitude', 'Longitudine': 'Longitude',
 };
 
 function tr(it, vars) {

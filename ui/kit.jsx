@@ -126,6 +126,51 @@ function linFit(pts) {
   return { slope, at: (x) => icpt + slope * x };
 }
 
+// ─── CSV export ──────────────────────────────────────────────
+// Excel-friendly: UTF-8 BOM, and ';' with a decimal comma when the number format uses the comma (as Excel expects there).
+const csvStamp = (iso) => { // local "2026-10-23 18:05:00": Excel does not read ISO with Z
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
+function csvText(header, rows) {
+  const dec = sepOf('decimal', '.'), sep = dec === ',' ? ';' : ',';
+  const cell = (v) => {
+    if (v == null || Number.isNaN(v)) return '';
+    if (typeof v === 'number') return String(v).replace('.', dec);
+    const s = String(v);
+    return /["\n\r;,]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return '\uFEFF' + [header, ...rows].map(r => r.map(cell).join(sep)).join('\r\n');
+}
+// iPhone/iPad: the share sheet (Save to Files, AirDrop...) works in the installed app; elsewhere a normal download.
+async function saveCsv(name, header, rows) {
+  const file = new File([csvText(header, rows)], name, { type: 'text/csv' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; } // closed the sheet: done; anything else: download
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const csvName = (what, label) => `${what}-${label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.csv`;
+
+function ExportButton({ onClick }) {
+  const t = useT();
+  return (
+    <button type="button" data-export-csv onClick={onClick} style={{
+      alignSelf: 'flex-start', minHeight: 44, padding: '0 4px', border: 0, background: 'none', font: 'inherit',
+      fontSize: 15, fontWeight: 600, color: t.blue, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+    }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONS.download}/></svg>
+      {tr('Esporta CSV')}
+    </button>
+  );
+}
+
 // ─── Layout primitives ──────────────────────────────────────
 const FONT = "-apple-system, 'SF Pro Text', system-ui, sans-serif";
 
@@ -689,5 +734,5 @@ Object.assign(window, {
   PERIOD_KINDS, periodRange, inPeriod, PeriodBar,
   Screen, CarSwitch, Title, Card, CardHead, BackLink, NavArrows, Stat, Grid, Divider, Seg, Chips, Bar, SocBar, Row, ListCard,
   SectionLabel, useWidth, useLayout, LineChart, Scatter, AxisLabels, OsmMap, HistoryLoading, ErrorBanner, Empty,
-  ICONS, TABS, TabBar,
+  ICONS, TABS, TabBar, saveCsv, csvName, csvStamp, ExportButton,
 });
