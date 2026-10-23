@@ -39,6 +39,10 @@ window.TMConfig = {
   // Each device can override it in Altro/More → This device.
   lang: "auto",
 
+  // Thousands/decimal separators: "auto" (the device format), "comma" (1.234,5), "dot" (1,234.5) or
+  // "space" (1 234,5). Each device can override it in Altro/More → This device.
+  numbers: "auto",
+
 
   // Optional: price per kWh (in `currency`) used to estimate charge cost when TeslaMate's own cost
   // tracking isn't configured (i.e. the API returns cost: 0). Leave null to

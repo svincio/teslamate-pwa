@@ -5,13 +5,17 @@
 // ─── Formatting (locale and month names from i18n.jsx) ──────
 
 const fmtN = (v, dec = 0) => (Number.isFinite(v) ? v : 0)
-  .toLocaleString(TM_LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  .toLocaleString(TM_NUM_LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
 // Currency from config.js (ISO code); TeslaMate stores costs without one. Intl puts the symbol where the locale wants it.
 const TM_MONEY = (() => {
   try { return new Intl.NumberFormat(TM_LOCALE, { style: 'currency', currency: tmReadConfig().currency }); }
   catch { return new Intl.NumberFormat(TM_LOCALE, { style: 'currency', currency: 'EUR' }); } // invalid code
 })();
-const fmtMoney = (v) => TM_MONEY.format(Number.isFinite(v) ? v : 0);
+// Symbol where the UI language puts it, separators from the number format (e.g. Italian UI with 1,234.5).
+const TM_SEP = new Intl.NumberFormat(TM_NUM_LOCALE).formatToParts(12345.6);
+const sepOf = (type, d) => (TM_SEP.find(p => p.type === type) || { value: d }).value;
+const fmtMoney = (v) => TM_MONEY.formatToParts(Number.isFinite(v) ? v : 0)
+  .map(p => p.type === 'group' ? sepOf('group', ',') : p.type === 'decimal' ? sepOf('decimal', '.') : p.value).join('');
 const CUR = TM_MONEY.formatToParts(0).find(p => p.type === 'currency').value;
 const fmtMin = (m) => {
   m = Math.round(m || 0);
