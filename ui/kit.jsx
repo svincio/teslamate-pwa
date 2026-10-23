@@ -5,14 +5,24 @@
 // ─── Formatting (locale and month names from i18n.jsx) ──────
 
 const fmtN = (v, dec = 0) => (Number.isFinite(v) ? v : 0)
-  .toLocaleString(TM_LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
-const fmtEur = (v) => fmtN(v, 2);
+  .toLocaleString(TM_NUM_LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
+// Currency from config.js (ISO code); TeslaMate stores costs without one. Intl puts the symbol where the locale wants it.
+const TM_MONEY = (() => {
+  try { return new Intl.NumberFormat(TM_LOCALE, { style: 'currency', currency: tmReadConfig().currency }); }
+  catch { return new Intl.NumberFormat(TM_LOCALE, { style: 'currency', currency: 'EUR' }); } // invalid code
+})();
+// Symbol where the UI language puts it, separators from the number format (e.g. Italian UI with 1,234.5).
+const TM_SEP = new Intl.NumberFormat(TM_NUM_LOCALE).formatToParts(12345.6);
+const sepOf = (type, d) => (TM_SEP.find(p => p.type === type) || { value: d }).value;
+const fmtMoney = (v) => TM_MONEY.formatToParts(Number.isFinite(v) ? v : 0)
+  .map(p => p.type === 'group' ? sepOf('group', ',') : p.type === 'decimal' ? sepOf('decimal', '.') : p.value).join('');
+const CUR = TM_MONEY.formatToParts(0).find(p => p.type === 'currency').value;
 const fmtMin = (m) => {
   m = Math.round(m || 0);
   if (m < 60) return `${m} min`;
   return m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${Math.floor(m / 60)} h`;
 };
-const hhmm = (iso) => iso ? new Date(iso).toTimeString().slice(0, 5) : '—';
+const hhmm = (iso) => fmtClock(iso);
 const sameDay = (a, b) => a.toDateString() === b.toDateString();
 
 // "Oggi", "Ieri · 18 ottobre", "12 ottobre", "12 ottobre 2025"
@@ -132,10 +142,34 @@ function Screen({ children, detail }) {
   );
 }
 
+// Quick car switch in every tab, only with more than one car: a pill over the native picker.
+// The choice reloads the app into the same tab with the same filters (window.tmReloadHere, app.jsx).
+function CarSwitch() {
+  const t = useT();
+  const car = window.TM_CAR || {};
+  const cars = car.cars || [];
+  if (cars.length < 2) return null;
+  const cur = tmReadConfig().carId;
+  return (
+    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 34, padding: '0 12px',
+      borderRadius: 17, background: t.card, color: t.blue, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONS.car}/></svg>
+      <span>{(cars.find(c => c.id === cur) || {}).name || car.name}</span>
+      <span aria-hidden="true" style={{ fontSize: 11 }}>▼</span>
+      <select aria-label={tr('Auto da mostrare')} value={cur} onChange={(e) => { tmSetPref('car', e.target.value); window.tmReloadHere(); }}
+        style={{ position: 'absolute', inset: 0, width: '100%', opacity: 0, fontSize: 16, cursor: 'pointer' }}>
+        {cars.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+    </label>
+  );
+}
+
 function Title({ children, right, sub }) {
   const t = useT();
+  const multi = ((window.TM_CAR || {}).cars || []).length > 1;
   return (
     <div style={{ padding: '0 4px 4px' }}>
+      {multi && <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}><CarSwitch/></div>}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <h1 style={{ margin: 0, fontSize: 34, fontWeight: 700, letterSpacing: -0.4 }}>{children}</h1>
         {right && <span style={{ fontSize: 13, color: t.sub, paddingBottom: 6 }}>{right}</span>}
@@ -578,9 +612,9 @@ function TabBar({ active, onChange }) {
 }
 
 Object.assign(window, {
-  fmtN, fmtEur, fmtMin, hhmm, dayLabel, dayShort, sinceLabel, agoLabel, linFit,
+  fmtN, fmtMoney, CUR, fmtMin, hhmm, dayLabel, dayShort, sinceLabel, agoLabel, linFit,
   PERIOD_KINDS, periodRange, inPeriod, PeriodBar,
-  Screen, Title, Card, CardHead, BackLink, Stat, Grid, Divider, Seg, Chips, Bar, SocBar, Row, ListCard,
+  Screen, CarSwitch, Title, Card, CardHead, BackLink, Stat, Grid, Divider, Seg, Chips, Bar, SocBar, Row, ListCard,
   SectionLabel, useWidth, LineChart, Scatter, AxisLabels, OsmMap, HistoryLoading, ErrorBanner, Empty,
   ICONS, TABS, TabBar,
 });

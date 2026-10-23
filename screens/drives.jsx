@@ -9,6 +9,7 @@ const findDrive = (id) => (window.TM_DRIVES || []).find(x => x.id === id)
 
 function DrivesScreen({ api, open, period, setPeriod }) {
   const t = useT();
+  const U = tmUnits();
   const [limit, setLimit] = React.useState(PAGE);
   const [tick, bump] = React.useState(0);
   React.useEffect(() => setLimit(PAGE), [period.kind, period.off]);
@@ -46,9 +47,9 @@ function DrivesScreen({ api, open, period, setPeriod }) {
       {loading ? <HistoryLoading/> : (
         <>
           <Card label={tr('Riepilogo periodo')} style={{ padding: '16px 18px', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0 }}>
-            <Stat size={26} v={fmtN(km)} label="km"/>
+            <Stat size={26} v={fmtN(km)} label={U.dist}/>
             <Stat size={26} v={fmtN(list.length)} label={tr('viaggi')}/>
-            <Stat size={26} v={km ? fmtN((kwh * 1000) / km) : '—'} label={tr('Wh/km medi')}/>
+            <Stat size={26} v={km ? fmtN((kwh * 1000) / km) : '—'} label={tr('{u} medi', { u: U.eff })}/>
           </Card>
           {!list.length && <Empty icon={ICONS.car} title={tr('Nessun viaggio nel periodo')} text={tr('I viaggi registrati da TeslaMate compariranno qui.')}/>}
           {groups.map(g => (
@@ -70,6 +71,7 @@ function DrivesScreen({ api, open, period, setPeriod }) {
 
 function DriveCard({ d, onClick }) {
   const t = useT();
+  const U = tmUnits();
   return (
     <div role="button" data-drive-id={d.id} onClick={onClick} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: t.card, borderRadius: 20, padding: '14px 16px', cursor: 'pointer' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -79,9 +81,9 @@ function DriveCard({ d, onClick }) {
       <div style={{ fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.from} <span style={{ color: t.sub }}>→</span> {d.to}</div>
       <SocBar from={d.socFrom} to={d.socTo} accent={t.orange}/>
       <div style={{ display: 'flex', gap: 16, fontSize: 14, color: t.sub }}>
-        <span><b style={{ color: t.text, fontWeight: 600 }}>{fmtN(d.distance || d.km, (d.distance || d.km) < 10 ? 1 : 0)}</b> km</span>
-        <span><b style={{ color: t.text, fontWeight: 600 }}>{fmtN(d.avgSpeed)}</b> km/h</span>
-        <span><b style={{ color: t.text, fontWeight: 600 }}>{d.eff ? fmtN(d.eff) : '—'}</b> Wh/km</span>
+        <span><b style={{ color: t.text, fontWeight: 600 }}>{fmtN(d.distance || d.km, (d.distance || d.km) < 10 ? 1 : 0)}</b> {U.dist}</span>
+        <span><b style={{ color: t.text, fontWeight: 600 }}>{fmtN(d.avgSpeed)}</b> {U.speed}</span>
+        <span><b style={{ color: t.text, fontWeight: 600 }}>{d.eff ? fmtN(d.eff) : '—'}</b> {U.eff}</span>
         {d.outsideTemp != null && <span style={{ marginLeft: 'auto' }}>{d.outsideTemp}°</span>}
       </div>
     </div>
@@ -114,12 +116,12 @@ function sectionStats(p) {
     if (de > 0) up += de; else down -= de;
     gps += hav(p[i - 1], p[i]);
   }
-  if (!(km > 0)) km = gps;
+  if (!(km > 0)) km = gps * tmUnits().kmPer; // GPS distance is in km
   const min = (new Date(b.date) - new Date(a.date)) / 60000;
   return { km, min, kwh, up, down, vmax, avg: min ? km / (min / 60) : 0, whkm: km ? (kwh * 1000) / km : 0, soc: a.battery - b.battery, from: a.date, to: b.date };
 }
 
-const hms = (iso) => iso ? new Date(iso).toTimeString().slice(0, 8) : '—';
+const hms = (iso) => fmtClock(iso, true);
 
 // Two-thumb slider over the trace indexes (native inputs: real touch handling and accessibility).
 function RangePick({ n, sel, onChange, label }) {
@@ -140,6 +142,7 @@ function RangePick({ n, sel, onChange, label }) {
 
 function DriveDetail({ id, onBack }) {
   const t = useT();
+  const U = tmUnits();
   const d = findDrive(id);
   const [trace, setTrace] = React.useState(() => (window.__driveTraceCache || {})[id] || null);
   const [err, setErr] = React.useState(null);
@@ -166,7 +169,7 @@ function DriveDetail({ id, onBack }) {
   const speeds = pts.map(p => p.speed), powers = pts.map(p => p.power), elev = pts.map(p => p.elevation);
   const maxOf = (a) => a.length ? Math.max(...a) : 0, minOf = (a) => a.length ? Math.min(...a) : 0;
   const charts = pts.length > 1 ? [
-    { title: tr('Velocità'), note: tr('max {v} km/h', { v: fmtN(zoomed ? maxOf(part.map(p => p.speed)) : (d.speedMax || maxOf(speeds))) }), color: t.blue, vals: speeds, min: 0, max: Math.max(10, maxOf(speeds) * 1.15) },
+    { title: tr('Velocità'), note: `max ${fmtN(zoomed ? maxOf(part.map(p => p.speed)) : (d.speedMax || maxOf(speeds)))} ${U.speed}`, color: t.blue, vals: speeds, min: 0, max: Math.max(10, maxOf(speeds) * 1.15) },
     { title: tr('Potenza'), note: tr('max {v} kW · rigenerazione sotto lo zero', { v: fmtN(maxOf(powers)) }), color: t.orange, vals: powers, min: Math.min(0, minOf(powers)) * 1.1, max: Math.max(10, maxOf(powers) * 1.1), zero: true },
     { title: tr('Altitudine'), note: `${fmtN(minOf(elev))}–${fmtN(maxOf(elev))} m`, color: t.purple, vals: elev, min: minOf(elev) - 5, max: maxOf(elev) + 5 },
   ] : [];
@@ -203,11 +206,11 @@ function DriveDetail({ id, onBack }) {
       {sec && (
         <Card label={tr('Tratto selezionato')} data-section-stats style={{ padding: '16px 18px', gap: 0 }}>
           <Grid cols={3}>
-            <Stat v={fmtN(sec.km, sec.km < 10 ? 2 : 1)} unit="km" label={tr('Distanza')}/>
+            <Stat v={fmtN(sec.km, sec.km < 10 ? 2 : 1)} unit={U.dist} label={tr('Distanza')}/>
             <Stat v={fmtMin(sec.min)} label={tr('Durata')}/>
-            <Stat v={fmtN(sec.avg)} unit="km/h" label={tr('Media · max {v}', { v: fmtN(sec.vmax) })}/>
+            <Stat v={fmtN(sec.avg)} unit={U.speed} label={tr('Media · max {v}', { v: fmtN(sec.vmax) })}/>
             <Stat v={fmtN(sec.kwh, 2)} unit="kWh" label={tr('Energia')}/>
-            <Stat v={sec.km > 0.05 ? fmtN(sec.whkm) : '—'} unit="Wh/km" label={tr('Consumo')}/>
+            <Stat v={sec.km > 0.05 ? fmtN(sec.whkm) : '—'} unit={U.eff} label={tr('Consumo')}/>
             <Stat v={`${sec.soc > 0 ? '−' : sec.soc < 0 ? '+' : ''}${fmtN(Math.abs(sec.soc))}%`} label={tr('Batteria')}/>
           </Grid>
           <div style={{ display: 'flex', gap: 16, borderTop: `0.5px solid ${t.line}`, paddingTop: 12, marginTop: 14, fontSize: 14, color: t.sub }}>
@@ -218,11 +221,11 @@ function DriveDetail({ id, onBack }) {
 
       <Card label={tr('Numeri del viaggio')} style={{ padding: '16px 18px', gap: 0 }}>
         <Grid cols={3}>
-          <Stat v={fmtN(d.distance || d.km, 1)} unit="km" label={tr('Distanza')}/>
+          <Stat v={fmtN(d.distance || d.km, 1)} unit={U.dist} label={tr('Distanza')}/>
           <Stat v={fmtN(d.durMin)} unit="min" label={tr('Durata')}/>
-          <Stat v={fmtN(d.avgSpeed)} unit="km/h" label={tr('Vel. media')}/>
+          <Stat v={fmtN(d.avgSpeed)} unit={U.speed} label={tr('Vel. media')}/>
           <Stat v={fmtN(d.kwh, 1)} unit="kWh" label={tr('Energia')}/>
-          <Stat v={d.eff ? fmtN(d.eff) : '—'} unit="Wh/km" label={tr('Consumo')}/>
+          <Stat v={d.eff ? fmtN(d.eff) : '—'} unit={U.eff} label={tr('Consumo')}/>
           <Stat v={d.outsideTemp != null ? `${d.outsideTemp}°` : '—'} label={tr('Esterna')}/>
         </Grid>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderTop: `0.5px solid ${t.line}`, paddingTop: 14, marginTop: 16 }}>

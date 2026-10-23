@@ -21,7 +21,7 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
   const ac = inP.filter(c => !isDC(c)), dc = inP.filter(isDC);
   const acCost = sum(ac, 'cost'), dcCost = sum(dc, 'cost'), total = acCost + dcCost;
   const acKwh = sum(ac, 'kwh'), dcKwh = sum(dc, 'kwh');
-  // Bar split by cost; by energy when no cost is configured yet (everything 0 €).
+  // Bar split by cost; by energy when no cost is configured yet (everything 0).
   const acShare = total ? acCost / total : (acKwh + dcKwh ? acKwh / (acKwh + dcKwh) : 1);
 
   const list = inP.filter(c => type === 'all' || (type === 'dc' ? isDC(c) : !isDC(c)));
@@ -48,15 +48,15 @@ function ChargesScreen({ api, open, period, setPeriod, type, setType }) {
           <Card label={tr('Spesa')} style={{ padding: '16px 18px' }}>
             <div>
               <div style={{ fontSize: 13, color: t.sub }}>{tr('Spesa')} · {r.label} · {tr('{n} ricariche', { n: fmtN(inP.length) })}</div>
-              <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: -0.5 }}>{fmtEur(total)} €</div>
+              <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: -0.5 }}>{fmtMoney(total)}</div>
             </div>
             <div aria-hidden="true" style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', gap: 2, background: t.track }}>
               {acShare > 0 && <div style={{ width: `${acShare * 100}%`, background: t.green }}/>}
               {acShare < 1 && <div style={{ flex: 1, background: t.orange }}/>}
             </div>
             <Grid cols={2} style={{ gap: 12 }}>
-              <Legend color={t.green} v={`${fmtEur(acCost)} €`} sub={`AC · ${tr('Casa')} · ${fmtN(acKwh, acKwh < 10 ? 1 : 0)} kWh`}/>
-              <Legend color={t.orange} v={`${fmtEur(dcCost)} €`} sub={`DC · Supercharger · ${fmtN(dcKwh, dcKwh < 10 ? 1 : 0)} kWh`}/>
+              <Legend color={t.green} v={fmtMoney(acCost)} sub={`AC · ${tr('Casa')} · ${fmtN(acKwh, acKwh < 10 ? 1 : 0)} kWh`}/>
+              <Legend color={t.orange} v={fmtMoney(dcCost)} sub={`DC · Supercharger · ${fmtN(dcKwh, dcKwh < 10 ? 1 : 0)} kWh`}/>
             </Grid>
           </Card>
 
@@ -115,7 +115,7 @@ function ChargeCard({ c, onClick }) {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: fg, whiteSpace: 'nowrap' }}>+{fmtN(c.kwh, 1)} <span style={{ fontSize: 12, color: t.sub, fontWeight: 500 }}>kWh</span></div>
-          <div style={{ fontSize: 13, color: t.sub }}>{fmtEur(c.cost)} €</div>
+          <div style={{ fontSize: 13, color: t.sub }}>{fmtMoney(c.cost)}</div>
         </div>
       </div>
       <SocBar mode="charge" from={c.from} to={c.to} accent={fg}/>
@@ -170,8 +170,8 @@ function ChargeDetail({ id, onBack }) {
         <Grid cols={2} style={{ gap: 14, borderTop: `0.5px solid ${t.line}`, paddingTop: 14 }}>
           <Stat size={20} v={fmtMin(c.durMin)} label={tr('Durata')}/>
           <Stat size={20} v={`${fmtN(avgKw, 1)} kW`} label={maxKw ? tr('Potenza media · max {v}', { v: fmtN(maxKw, maxKw < 10 ? 1 : 0) }) : tr('Potenza media')}/>
-          <Stat size={20} v={`${fmtEur(c.cost)} €`} label={c.pricePerKwh ? tr('Costo · {v} €/kWh', { v: fmtN(c.pricePerKwh, 2) }) : tr('Costo · prezzo non impostato')}/>
-          <Stat size={20} v={`+${fmtN(c.rangeAdded)} km`} label={tr('Autonomia aggiunta')}/>
+          <Stat size={20} v={fmtMoney(c.cost)} label={c.pricePerKwh ? tr('Costo · {v}/kWh', { v: fmtMoney(c.pricePerKwh) }) : tr('Costo · prezzo non impostato')}/>
+          <Stat size={20} v={`+${fmtN(c.rangeAdded)} ${tmUnits().dist}`} label={tr('Autonomia aggiunta')}/>
         </Grid>
       </Card>
 

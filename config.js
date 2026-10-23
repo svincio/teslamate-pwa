@@ -25,6 +25,7 @@ window.TMConfig = {
   apiBase: "/api/v1",
 
   // Which car to display (TeslaMate car_id, usually 1 for single-vehicle setups).
+  // With more cars, each device can pick another one in Altro/More → This device.
   carId: 1,
 
   // Optional: API_TOKEN value (only required if you also use command/wake_up
@@ -35,14 +36,29 @@ window.TMConfig = {
   // Set to 0 to disable auto-refresh.
   refreshSeconds: 60,
 
-  // UI language: "auto" (Italian if the browser is Italian, English otherwise), "it" or "en".
+  // UI language: "auto" (the device language; English if not Italian), "it" or "en".
+  // Each device can override it in Altro/More → This device.
   lang: "auto",
 
+  // Thousands/decimal separators: "auto" (the device format), "comma" (1.234,5), "dot" (1,234.5) or
+  // "space" (1 234,5). Each device can override it in Altro/More → This device.
+  numbers: "auto",
 
-  // Optional: €/kWh used to estimate charge cost when TeslaMate's own cost
+  // Theme: "auto" (the system setting), "light" or "dark". Each device can override it in Altro/More → This device.
+  theme: "auto",
+
+  // Clock: "auto" (the device habit), "24" or "12" (AM/PM). Each device can override it in Altro/More → This device.
+  clock: "auto",
+
+
+  // Optional: price per kWh (in `currency`) used to estimate charge cost when TeslaMate's own cost
   // tracking isn't configured (i.e. the API returns cost: 0). Leave null to
   // just show whatever the API reports. AC = home/destination, DC = fast/Supercharger.
   priceAcPerKwh: null,
   priceDcPerKwh: null,
+
+  // Currency of the costs (ISO 4217 code: "EUR", "USD", "GBP", "CHF"…). TeslaMate stores costs without one.
+  // Distances and temperatures follow TeslaMate's own settings (km/mi, °C/°F): nothing to set here.
+  currency: "EUR",
 
 };
