@@ -50,7 +50,8 @@ window.TMConfig = {
   // Clock: "auto" (the device habit), "24" or "12" (AM/PM). Each device can override it in Altro/More → This device.
   clock: "auto",
 
-  // Text size: "auto" (on iPhone/iPad the system text size), "100", "115", "130" or "150" (%).
+  // Text size: "auto" (on iPhone/iPad the system text size) or a percentage from 80 to 300, e.g. "130"
+  // (capped on narrow screens, about 195% on an iPhone held upright).
   // Each device can override it in Altro/More → This device.
   textSize: "auto",
 

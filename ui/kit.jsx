@@ -594,7 +594,7 @@ function TabBar({ active, onChange }) {
       backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: `0.5px solid ${t.line}`,
       padding: '6px 4px calc(env(safe-area-inset-bottom, 0px) + 4px)',
       display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', fontFamily: FONT,
-      zoom: Math.min(1, 1.15 / TM_TEXT_SCALE), // like iOS: the tab bar grows at most 15% with large text
+      zoom: 'var(--tm-nav-zoom, 1)', // tmApplyText (theme.jsx): grows at most 15% with large text
     }}>
       {TABS.map(tab => {
         const on = tab.id === active;

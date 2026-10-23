@@ -139,7 +139,7 @@ const TM_EN = {
   'Impostazioni': 'Settings', 'Connessione e app': 'Connection and app', 'Ultimo aggiornamento': 'Last update',
   'Aggiorna ora': 'Refresh now', 'in corso…': 'in progress…', 'Aggiornamento automatico': 'Auto refresh',
   'ogni {n} s': 'every {n} s', 'spento': 'off', 'Installazione': 'Installed', 'Sulla schermata Home': 'On the Home Screen',
-  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', 'Dimensione testo': 'Text size', '{n} s in viaggio o in carica': '{n} s while driving or charging', 'Disponibile': 'Available', 'Pneumatici': 'Tyres', 'controlla': 'check', 'Anteriore sinistra': 'Front left', 'Anteriore destra': 'Front right',
+  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', 'Manuale': 'Manual', 'Riduci': 'Smaller', 'Aumenta': 'Larger', 'Scelto {n}%: su questo schermo al massimo {m}%.': 'Chosen {n}%: at most {m}% on this screen.', 'Dimensione testo': 'Text size', '{n} s in viaggio o in carica': '{n} s while driving or charging', 'Disponibile': 'Available', 'Pneumatici': 'Tyres', 'controlla': 'check', 'Anteriore sinistra': 'Front left', 'Anteriore destra': 'Front right',
   'Posteriore sinistra': 'Rear left', 'Posteriore destra': 'Rear right', 'Aperto': 'Open', 'Porte': 'Doors', 'Finestrini': 'Windows', 'Bagagliaio': 'Trunk', 'Bagagliaio anteriore': 'Frunk',
   'Porta anteriore conducente': 'Driver front door', 'Porta posteriore conducente': 'Driver rear door',
   'Porta anteriore passeggero': 'Passenger front door', 'Porta posteriore passeggero': 'Passenger rear door', 'Si applicano quando esci da Altro.': 'Applied when you leave More.', 'Auto da mostrare': 'Car shown', 'Predefinita': 'Default', "Formato dell'ora": 'Time format', 'Chiaro': 'Light', 'Scuro': 'Dark', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
@@ -163,4 +163,4 @@ function tr(it, vars) {
   return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : s;
 }
 
-Object.assign(window, { TM_PREFS, tmSetPref, tmChoice, TM_LANG, TM_LOCALE, TM_NUM_LOCALE, TM_H12, fmtClock, MESI, MESI3, tr });
+Object.assign(window, { TM_PREFS, tmPrefsNow, tmSetPref, tmChoice, TM_LANG, TM_LOCALE, TM_NUM_LOCALE, TM_H12, fmtClock, MESI, MESI3, tr });
