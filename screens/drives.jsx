@@ -10,8 +10,11 @@ const findDrive = (id) => (window.TM_DRIVES || []).find(x => x.id === id)
 function DrivesScreen({ api, open, period, setPeriod }) {
   const t = useT();
   const U = tmUnits();
+  const layout = useLayout();
+  const desk = layout === 'desk';
   const [limit, setLimit] = React.useState(PAGE);
   const [tick, bump] = React.useState(0);
+  const [selId, setSelId] = React.useState(null); // solo desk: elenco a sinistra, dettaglio a destra
   React.useEffect(() => setLimit(PAGE), [period.kind, period.off]);
 
   const r = periodRange(period);
@@ -32,6 +35,13 @@ function DrivesScreen({ api, open, period, setPeriod }) {
   const km = list.reduce((s, d) => s + (d.distance || d.km), 0);
   const kwh = list.reduce((s, d) => s + d.kwh, 0);
 
+  // Vista elenco+dettaglio (desk): la selezione segue il periodo/filtro, le frecce ↑↓ scorrono `list`.
+  React.useEffect(() => {
+    if (desk && !list.some(d => d.id === selId)) setSelId(list[0] ? list[0].id : null);
+  }, [desk, key, list.length]);
+  const onOpen = desk ? setSelId : (id) => open({ type: 'drive', id });
+  const selIdx = list.findIndex(d => d.id === selId);
+
   const groups = [];
   for (const d of list.slice(0, limit)) {
     const day = dayLabel(d._date, false) === tr('Oggi') ? tr('Oggi') : dayLabel(d._date);
@@ -39,23 +49,27 @@ function DrivesScreen({ api, open, period, setPeriod }) {
     if (g && g.day === day) g.items.push(d); else groups.push({ day, items: [d] });
   }
 
-  return (
+  const content = (
     <Screen>
       <Title>{tr('Viaggi')}</Title>
       <PeriodBar value={period} onChange={setPeriod}/>
       {src && src.error && <ErrorBanner title={tr('Viaggi non disponibili')} text={tr('Non riesco a scaricare questo periodo: {err}', { err: src.error })} onRetry={() => { delete olderDrives[key]; bump(n => n + 1); }}/>}
       {loading ? <HistoryLoading/> : (
         <>
-          <Card label={tr('Riepilogo periodo')} style={{ padding: '16px 18px', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0 }}>
-            <Stat size={26} v={fmtN(km)} label={U.dist}/>
-            <Stat size={26} v={fmtN(list.length)} label={tr('viaggi')}/>
-            <Stat size={26} v={km ? fmtN((kwh * 1000) / km) : '—'} label={tr('{u} medi', { u: U.eff })}/>
+          <Card label={tr('Riepilogo periodo')} style={{ padding: '16px 18px' }}>
+            <Grid cols={3} style={{ gap: 0 }}>
+              <Stat size={26} v={fmtN(km)} label={U.dist}/>
+              <Stat size={26} v={fmtN(list.length)} label={tr('viaggi')}/>
+              <Stat size={26} v={km ? fmtN((kwh * 1000) / km) : '—'} label={tr('{u} medi', { u: U.eff })}/>
+            </Grid>
           </Card>
           {!list.length && <Empty icon={ICONS.car} title={tr('Nessun viaggio nel periodo')} text={tr('I viaggi registrati da TeslaMate compariranno qui.')}/>}
           {groups.map(g => (
             <div key={g.day} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <h2 style={{ margin: '6px 4px 0', fontSize: 15, fontWeight: 600, color: t.sub }}>{g.day}</h2>
-              {g.items.map(d => <DriveCard key={d.id} d={d} onClick={() => open({ type: 'drive', id: d.id })}/>)}
+              <div style={layout === 'wide' ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 } : { display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {g.items.map(d => <DriveCard key={d.id} d={d} selected={desk && d.id === selId} onClick={() => onOpen(d.id)}/>)}
+              </div>
             </div>
           ))}
           {list.length > limit && (
@@ -67,13 +81,33 @@ function DrivesScreen({ api, open, period, setPeriod }) {
       )}
     </Screen>
   );
+
+  if (!desk) return content;
+
+  // shortcut: l'elenco e il dettaglio scorrono nella stessa pagina (nessun pannello a scroll indipendente)
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
+      <div style={{ width: 420, flex: 'none', position: 'sticky', top: 0 }}>{content}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {selId
+          ? <DriveDetail id={selId}
+              onPrev={() => selIdx > 0 && setSelId(list[selIdx - 1].id)}
+              onNext={() => selIdx >= 0 && selIdx < list.length - 1 && setSelId(list[selIdx + 1].id)}
+              hasPrev={selIdx > 0} hasNext={selIdx >= 0 && selIdx < list.length - 1}/>
+          : <Screen detail><Empty icon={ICONS.car} title={tr('Nessun viaggio selezionato')} text={tr('Scegli un viaggio dall’elenco.')}/></Screen>}
+      </div>
+    </div>
+  );
 }
 
-function DriveCard({ d, onClick }) {
+function DriveCard({ d, selected, onClick }) {
   const t = useT();
   const U = tmUnits();
   return (
-    <div role="button" data-drive-id={d.id} onClick={onClick} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: t.card, borderRadius: 20, padding: '14px 16px', cursor: 'pointer' }}>
+    <div role="button" data-drive-id={d.id} onClick={onClick} style={{
+      display: 'flex', flexDirection: 'column', gap: 10, background: t.card, borderRadius: 20, padding: '14px 16px', cursor: 'pointer',
+      boxShadow: selected ? `0 0 0 2px ${t.blue}` : 'none',
+    }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <span style={{ fontSize: 20, fontWeight: 700 }}>{fmtMin(d.durMin)}</span>
         <span style={{ fontSize: 14, color: t.sub }}>{d.time}</span>
@@ -140,15 +174,17 @@ function RangePick({ n, sel, onChange, label }) {
   );
 }
 
-function DriveDetail({ id, onBack }) {
+function DriveDetail({ id, onBack, onPrev, onNext, hasPrev, hasNext }) {
   const t = useT();
   const U = tmUnits();
+  const layout = useLayout();
   const d = findDrive(id);
   const [trace, setTrace] = React.useState(() => (window.__driveTraceCache || {})[id] || null);
   const [err, setErr] = React.useState(null);
   const [sel, setSel] = React.useState(null);      // [i0, i1] on the trace, null = whole drive
   const [mapSel, setMapSel] = React.useState(null); // same, debounced: refitting the map on every slider tick is janky
   React.useEffect(() => { const h = setTimeout(() => setMapSel(sel), 250); return () => clearTimeout(h); }, [sel]);
+  React.useEffect(() => setSel(null), [id]); // selezione viaggio precedente non deve sopravvivere al cambio con ↑↓
 
   React.useEffect(() => {
     if (trace) return;
@@ -179,10 +215,13 @@ function DriveDetail({ id, onBack }) {
 
   return (
     <Screen detail>
-      <BackLink label={tr('Viaggi')} onClick={onBack}/>
-      <div style={{ padding: '0 4px' }}>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, lineHeight: 1.2 }}>{d.from} → {d.to}</h1>
-        <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{dayLabel(d._date)} · {d.time} – {hhmm(d._end)}</div>
+      {onBack && <BackLink label={tr('Viaggi')} onClick={onBack}/>}
+      <div style={{ padding: '0 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, lineHeight: 1.2 }}>{d.from} → {d.to}</h1>
+          <div style={{ fontSize: 15, color: t.sub, marginTop: 4 }}>{dayLabel(d._date)} · {d.time} – {hhmm(d._end)}</div>
+        </div>
+        {onPrev && <NavArrows onPrev={onPrev} onNext={onNext} hasPrev={hasPrev} hasNext={hasNext}/>}
       </div>
 
       {trace && trace.length > 1
@@ -220,7 +259,7 @@ function DriveDetail({ id, onBack }) {
       )}
 
       <Card label={tr('Numeri del viaggio')} style={{ padding: '16px 18px', gap: 0 }}>
-        <Grid cols={3}>
+        <Grid cols={layout === 'desk' ? 6 : 3}>
           <Stat v={fmtN(d.distance || d.km, 1)} unit={U.dist} label={tr('Distanza')}/>
           <Stat v={fmtN(d.durMin)} unit="min" label={tr('Durata')}/>
           <Stat v={fmtN(d.avgSpeed)} unit={U.speed} label={tr('Vel. media')}/>
@@ -234,13 +273,15 @@ function DriveDetail({ id, onBack }) {
         </div>
       </Card>
 
-      {charts.map(c => (
-        <Card key={c.title} label={c.title} style={{ padding: '14px 16px 12px', gap: 8 }}>
-          <CardHead title={zoomed ? `${c.title} · ${tr('tratto')}` : c.title} note={c.note}/>
-          <LineChart label={tr('{title} nel tempo', { title: c.title })} zero={c.zero} series={[{ vals: c.vals, color: c.color, min: c.min, max: c.max, area: true }]}/>
-          <AxisLabels items={times}/>
-        </Card>
-      ))}
+      <div style={layout === 'desk' ? { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 } : { display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {charts.map(c => (
+          <Card key={c.title} label={c.title} style={{ padding: '14px 16px 12px', gap: 8 }}>
+            <CardHead title={zoomed ? `${c.title} · ${tr('tratto')}` : c.title} note={c.note}/>
+            <LineChart label={tr('{title} nel tempo', { title: c.title })} zero={c.zero} series={[{ vals: c.vals, color: c.color, min: c.min, max: c.max, area: true }]}/>
+            <AxisLabels items={times}/>
+          </Card>
+        ))}
+      </div>
     </Screen>
   );
 }
