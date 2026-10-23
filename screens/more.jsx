@@ -50,7 +50,8 @@ function MoreScreen({ api, open, pending, onPrefChange }) {
         <Row label="TeslaMateAPI" value={<span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: conn[1] }}><span style={{ width: 8, height: 8, borderRadius: 4, background: conn[1] }}/>{conn[0]}</span>}/>
         <Row label={tr('Ultimo aggiornamento')} value={last}/>
         <Row label={tr('Aggiorna ora')} value={api.status === 'loading' || api.historyStatus === 'loading' ? tr('in corso…') : ''} valueColor={t.blue} onClick={api.refresh}/>
-        <Row label={tr('Aggiornamento automatico')} value={cfg.refreshSeconds > 0 ? tr('ogni {n} s', { n: cfg.refreshSeconds }) : tr('spento')}/>
+        <Row label={tr('Aggiornamento automatico')} value={cfg.refreshSeconds > 0 ? tr('ogni {n} s', { n: cfg.refreshSeconds }) : tr('spento')}
+          sub={cfg.refreshSeconds > 15 ? tr('{n} s in viaggio o in carica', { n: 15 }) : null}/>
         <Row label={tr('Installazione')} value={standalone ? tr('Sulla schermata Home') : tr('Nel browser')}/>
         <Row label={tr('Versione app')} value={APP_VERSION} last/>
       </ListCard>
