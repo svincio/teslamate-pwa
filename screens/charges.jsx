@@ -94,7 +94,7 @@ function Legend({ color, v, sub }) {
   return (
     <div style={{ display: 'flex', gap: 8 }}>
       <span style={{ width: 10, height: 10, borderRadius: 5, background: color, marginTop: 5, flex: 'none' }}/>
-      <div><div style={{ fontSize: 17, fontWeight: 600 }}>{v}</div><div style={{ fontSize: 13, color: t.sub }}>{sub}</div></div>
+      <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}><div style={{ fontSize: 17, fontWeight: 600 }}>{v}</div><div style={{ fontSize: 13, color: t.sub }}>{sub}</div></div>
     </div>
   );
 }
