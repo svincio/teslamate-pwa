@@ -34,7 +34,8 @@ function MoreScreen({ api, open }) {
       <ListCard label={tr('Questo dispositivo')}>
         <PrefRow label={tr('Lingua')} pref="lang" options={[{ value: 'auto', label: 'Auto' }, { value: 'it', label: 'Italiano' }, { value: 'en', label: 'English' }]}/>
         <PrefRow label={tr('Formato dei numeri')} pref="numbers" options={[{ value: 'auto', label: 'Auto' },
-          { value: 'comma', label: '1.234,5' }, { value: 'dot', label: '1,234.5' }, { value: 'space', label: '1 234,5' }]} last/>
+          { value: 'comma', label: '1.234,5' }, { value: 'dot', label: '1,234.5' }, { value: 'space', label: '1 234,5' }]}/>
+        <PrefRow label={tr('Tema')} pref="theme" options={[{ value: 'auto', label: 'Auto' }, { value: 'light', label: tr('Chiaro') }, { value: 'dark', label: tr('Scuro') }]} last/>
       </ListCard>
       <p style={{ margin: '4px 16px', fontSize: 13, lineHeight: 1.4, color: t.sub }}>
         {tr('Valgono solo su questo dispositivo. Auto: segue config.js sul server, se lo imposta, altrimenti il dispositivo.')}
@@ -51,7 +52,7 @@ function MoreScreen({ api, open }) {
       </ListCard>
       {(api.error || api.historyError) && <p style={{ margin: '4px 16px', fontSize: 13, color: t.red, wordBreak: 'break-word' }}>{[api.error, api.historyError && tr('Storico: {err}', { err: api.historyError })].filter(Boolean).join(' · ')}</p>}
       <p style={{ margin: '4px 16px', fontSize: 13, lineHeight: 1.4, color: t.sub }}>
-        {tr("Indirizzo, autenticazione e auto si configurano in config.js sul server. Il tema segue l'impostazione dell'iPhone.")}
+        {tr('Indirizzo e autenticazione si configurano in config.js sul server.')}
       </p>
     </Screen>
   );
