@@ -239,6 +239,7 @@ function normalizeCar(carRaw, statusRaw, fallback) {
     trim:        TRIMS[trim] || trim,
     locked:      !!pick(cstat, 'locked'),
     open:        openings(cstat),
+    update:      pick(ver, 'update_available') === true ? (pick(ver, 'update_version') || '') : null, // version waiting to install
     tyres:       tyres(pick(s, 'tpms_details') || {}, pick(statusRaw, 'units.unit_of_pressure')),
     stateSince:  pick(s, 'state_since') || null,
     lat:         safeNum(pick(geo, 'latitude', 'location.latitude')) || null,

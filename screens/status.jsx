@@ -68,6 +68,11 @@ function StatusScreen({ api, go }) {
             <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6, wordBreak: 'break-all' }}>{car.software || '—'}</div>
             {lastUpdate && lastUpdate.version === car.software && lastUpdate.date &&
               <div style={{ fontSize: 12, color: t.sub }}>{tr('installato il {date}', { date: `${new Date(lastUpdate.date).getDate()} ${MESI3[new Date(lastUpdate.date).getMonth()]}` })}</div>}
+            {car.update != null && (
+              <div style={{ alignSelf: 'flex-start', marginTop: 4, padding: '4px 9px', borderRadius: 10, background: t.blueBg, color: t.blue, fontSize: 12, fontWeight: 600 }}>
+                {tr('Disponibile')}{car.update ? ` ${car.update}` : ''}
+              </div>
+            )}
           </Card>
         </Grid>
 
