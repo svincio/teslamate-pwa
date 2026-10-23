@@ -248,7 +248,8 @@ function Seg({ options, value, onChange, label, small }) {
           <button key={i} type="button" aria-pressed={on} onClick={() => onChange(o.value)} style={{
             minHeight: small ? 34 : 36, border: 0, borderRadius: small ? 8 : 9, background: on ? t.seg : 'transparent',
             color: t.text, font: 'inherit', fontSize: small ? 13 : 14, fontWeight: on ? 600 : 500,
-            boxShadow: on ? '0 1px 3px rgba(0,0,0,0.12)' : 'none', cursor: 'pointer', padding: 0,
+            boxShadow: on ? '0 1px 3px rgba(0,0,0,0.12)' : 'none', cursor: 'pointer', padding: '0 4px',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', // large text on a narrow screen
           }}>{o.label}</button>
         );
       })}
@@ -593,6 +594,7 @@ function TabBar({ active, onChange }) {
       backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: `0.5px solid ${t.line}`,
       padding: '6px 4px calc(env(safe-area-inset-bottom, 0px) + 4px)',
       display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', fontFamily: FONT,
+      zoom: Math.min(1, 1.15 / TM_TEXT_SCALE), // like iOS: the tab bar grows at most 15% with large text
     }}>
       {TABS.map(tab => {
         const on = tab.id === active;

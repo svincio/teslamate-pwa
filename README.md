@@ -79,6 +79,7 @@ Copy [`config.js`](config.js), edit it and mount it as shown above:
 | `carId` | `1` | TeslaMate car id. With more cars, each device can pick another one in More → This device |
 | `token` | `""` | TeslaMateAPI `API_TOKEN`. Not needed for read-only endpoints; it would be readable by anyone. |
 | `refreshSeconds` | `60` | Status polling interval while the app is open, `0` disables it |
+| `textSize` | `"auto"` | `"auto"` (iPhone/iPad text size setting), `"100"`, `"115"`, `"130"`, `"150"` (%). Per-device override in More → This device |
 | `clock` | `"auto"` | `"auto"` (device habit), `"24"` or `"12"` (AM/PM). Per-device override in More → This device |
 | `theme` | `"auto"` | `"auto"` (system setting), `"light"` or `"dark"`. Per-device override in More → This device |
 | `numbers` | `"auto"` | Separators: `"auto"` (device format), `"comma"` 1.234,5, `"dot"` 1,234.5, `"space"` 1 234,5. Per-device override in More → This device |

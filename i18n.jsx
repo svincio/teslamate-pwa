@@ -5,7 +5,7 @@
 // Vars: tr('{n} viaggi', { n }) — an English entry can be [singular, plural], picked on n == 1.
 // ─────────────────────────────────────────────────────────────
 
-// Per-device settings, kept in localStorage: { lang?, numbers?, clock?, theme?, car? }. Missing or 'auto' = not chosen here.
+// Per-device settings, kept in localStorage: { lang?, numbers?, clock?, theme?, textSize?, car? }. Missing or 'auto' = not chosen here.
 const TM_PREFS_KEY = 'tm.pwa.prefs';
 const tmPrefsNow = () => { try { return JSON.parse(localStorage.getItem(TM_PREFS_KEY)) || {}; } catch { return {}; } };
 const TM_PREFS = tmPrefsNow(); // as at start-up: what this run of the app uses
@@ -139,7 +139,7 @@ const TM_EN = {
   'Impostazioni': 'Settings', 'Connessione e app': 'Connection and app', 'Ultimo aggiornamento': 'Last update',
   'Aggiorna ora': 'Refresh now', 'in corso…': 'in progress…', 'Aggiornamento automatico': 'Auto refresh',
   'ogni {n} s': 'every {n} s', 'spento': 'off', 'Installazione': 'Installed', 'Sulla schermata Home': 'On the Home Screen',
-  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', '{n} s in viaggio o in carica': '{n} s while driving or charging', 'Disponibile': 'Available', 'Pneumatici': 'Tyres', 'controlla': 'check', 'Anteriore sinistra': 'Front left', 'Anteriore destra': 'Front right',
+  'Nel browser': 'In the browser', 'Questo dispositivo': 'This device', 'Lingua': 'Language', 'Formato dei numeri': 'Number format', 'Tema': 'Theme', 'Dimensione testo': 'Text size', '{n} s in viaggio o in carica': '{n} s while driving or charging', 'Disponibile': 'Available', 'Pneumatici': 'Tyres', 'controlla': 'check', 'Anteriore sinistra': 'Front left', 'Anteriore destra': 'Front right',
   'Posteriore sinistra': 'Rear left', 'Posteriore destra': 'Rear right', 'Aperto': 'Open', 'Porte': 'Doors', 'Finestrini': 'Windows', 'Bagagliaio': 'Trunk', 'Bagagliaio anteriore': 'Frunk',
   'Porta anteriore conducente': 'Driver front door', 'Porta posteriore conducente': 'Driver rear door',
   'Porta anteriore passeggero': 'Passenger front door', 'Porta posteriore passeggero': 'Passenger rear door', 'Si applicano quando esci da Altro.': 'Applied when you leave More.', 'Auto da mostrare': 'Car shown', 'Predefinita': 'Default', "Formato dell'ora": 'Time format', 'Chiaro': 'Light', 'Scuro': 'Dark', 'Versione app': 'App version', 'Storico: {err}': 'History: {err}',
