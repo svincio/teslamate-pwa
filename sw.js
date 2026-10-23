@@ -1,7 +1,8 @@
 // TeslaMate PWA — Service Worker
-// Stale-while-revalidate for shell, network-first w/ offline fallback for API.
+// App files: network first with offline copy. CDN libraries: cache first. API: network only.
 
-const CACHE = 'teslamate-pwa-v6';
+const CACHE = 'teslamate-pwa-v7';
+const NET_TIMEOUT_MS = 3000; // slower than this (bad signal, VPN down): use the saved copy
 const SHELL = [
   './pwa.html',
   './manifest.json',
@@ -63,18 +64,27 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Stale-while-revalidate for everything else
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const fetched = fetch(e.request)
-        .then((r) => {
-          if (r.ok && (e.request.method === 'GET')) {
-            caches.open(CACHE).then((c) => c.put(e.request, r.clone()));
-          }
-          return r;
-        })
-        .catch(() => cached);
-      return cached || fetched;
-    })
-  );
+  if (e.request.method !== 'GET') return;
+
+  // Versioned CDN libraries never change: cache first. Anything else cross-origin (map tiles): browser default.
+  if (url.origin !== self.location.origin) {
+    if (url.hostname !== 'unpkg.com') return;
+    e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((r) => {
+      if (r.ok) { const copy = r.clone(); e.waitUntil(caches.open(CACHE).then((c) => c.put(e.request, copy))); }
+      return r;
+    })));
+    return;
+  }
+
+  // The app's own files: network first, so an installed app always opens on the deployed version;
+  // the saved copy only when offline or the server is slow. waitUntil keeps the copy being saved:
+  // iOS stops an idle worker early (with stale-while-revalidate the update never landed).
+  const net = fetch(e.request).then((r) => ({ r, copy: r.ok ? r.clone() : null }));
+  e.waitUntil(net.then(({ copy }) => copy && caches.open(CACHE).then((c) => c.put(e.request, copy))).catch(() => {}));
+  const slow = new Promise((res) => setTimeout(res, NET_TIMEOUT_MS));
+  const saved = () => caches.match(e.request);
+  e.respondWith(Promise.race([
+    net.then((x) => x.r),
+    slow.then(() => saved().then((hit) => hit || net.then((x) => x.r))),
+  ]).catch(() => saved().then((hit) => hit || Response.error())));
 });
