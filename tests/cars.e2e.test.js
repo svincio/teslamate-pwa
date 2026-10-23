@@ -56,3 +56,25 @@ test('a chosen car that no longer exists is forgotten', async () => {
     assert.equal(await page.evaluate(() => localStorage.getItem('tm.pwa.prefs')), '{}');
   });
 });
+
+test('car switch in the title: stays in the same tab with the same filters', async () => {
+  await withBrowser(async (page) => {
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+    await ready(page, 'Silver Arrow');
+    await tab(page, 'Viaggi');
+    await press(page, 'Anno');
+    const firstKm = await page.evaluate(() => document.body.innerText.match(/([\d.]+)\s*\n\s*km/)[1]);
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+      page.evaluate(() => setTimeout(() => { // the change reloads the page: dispatch it after evaluate returns
+        const s = document.querySelector('select[aria-label="Auto da mostrare"]');
+        s.value = '2'; s.dispatchEvent(new Event('change', { bubbles: true }));
+      }, 0)),
+    ]);
+    await ready(page, 'Red Comet');                            // the pill now names the other car
+    assert.equal(await page.$eval('h1', h => h.innerText), 'Viaggi', 'same tab');
+    assert.equal(await page.$eval('button[aria-pressed="true"]', b => b.innerText.trim()), 'Anno', 'same period');
+    assert.equal(await page.evaluate(() => window.TM_CAR.name), 'Red Comet');
+    assert.notEqual(await page.evaluate(() => document.body.innerText.match(/([\d.]+)\s*\n\s*km/)[1]), firstKm, 'the other car\'s trips');
+  });
+});
