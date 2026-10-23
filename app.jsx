@@ -12,6 +12,7 @@ const TM_RESUME = (() => {
 
 function App() {
   const t = useSystemTheme();
+  const layout = useLayout(); // phone / wide / desk (0.10: sidebar + layout a 3 fasce)
   const api = useTeslaMate();
   const R = TM_RESUME;
   const [tab, setTab] = React.useState(R.tab || 'status');
@@ -55,15 +56,23 @@ function App() {
     updates: () => <UpdatesDetail onBack={back}/>,
   }[detail.type];
 
+  // Oltre il telefono il contenuto resta leggibile: centrato, con un tetto che cresce con lo schermo.
+  const Center = ({ children }) => layout === 'phone' ? children : (
+    <div style={{ maxWidth: layout === 'wide' ? 900 : 'none', margin: '0 auto', width: '100%' }}>{children}</div>
+  );
+
   return (
     <TMTheme.Provider value={t}>
-      <div ref={scroller} style={{ position: 'fixed', inset: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: t.bg }}>
-        {screens[tab]}
+      <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
+        {layout === 'desk' && <TabBar side active={tab} onChange={go}/>}
+        <div ref={scroller} style={{ position: 'relative', flex: 1, minWidth: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: t.bg }}>
+          <Center>{screens[tab]}</Center>
+        </div>
       </div>
-      <TabBar active={tab} onChange={go}/>
+      {layout !== 'desk' && <TabBar active={tab} onChange={go}/>}
       {details && (
         <div key={`${detail.type}-${detail.id || ''}`} style={{ position: 'fixed', inset: 0, zIndex: 60, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: t.bg }}>
-          {details()}
+          <Center>{details()}</Center>
         </div>
       )}
     </TMTheme.Provider>

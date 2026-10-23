@@ -129,6 +129,22 @@ function linFit(pts) {
 // ─── Layout primitives ──────────────────────────────────────
 const FONT = "-apple-system, 'SF Pro Text', system-ui, sans-serif";
 
+// Three width tiers (telefono/tablet/desktop, soglie 700/1100), sulla larghezza reale:
+// a testo grande <html> ha uno zoom CSS, quindi si divide per tornare ai px "fisici".
+function useLayout() {
+  const calc = () => {
+    const w = window.innerWidth / (window.TM_TEXT_SCALE || 1);
+    return w >= 1100 ? 'desk' : w >= 700 ? 'wide' : 'phone';
+  };
+  const [layout, setLayout] = React.useState(calc);
+  React.useEffect(() => {
+    const on = () => setLayout(calc());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return layout;
+}
+
 function Screen({ children, detail }) {
   const t = useT();
   return (
@@ -212,6 +228,32 @@ function BackLink({ label, onClick }) {
   );
 }
 
+// Prev/next through a list of siblings (vista elenco+dettaglio desktop). Anche con le frecce ↑↓ da tastiera.
+function NavArrows({ onPrev, onNext, hasPrev, hasNext }) {
+  const t = useT();
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+      if (e.key === 'ArrowUp' && hasPrev) onPrev();
+      else if (e.key === 'ArrowDown' && hasNext) onNext();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onPrev, onNext, hasPrev, hasNext]);
+  const btn = (dir, disabled, onClick, label) => (
+    <button type="button" aria-label={label} disabled={disabled} onClick={onClick} style={{
+      width: 34, height: 34, borderRadius: 10, border: 0, background: t.card, color: disabled ? t.track : t.blue,
+      font: 'inherit', fontSize: 15, cursor: disabled ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+    }}>{dir}</button>
+  );
+  return (
+    <div style={{ display: 'flex', gap: 6 }}>
+      {btn('↑', !hasPrev, onPrev, tr('Precedente'))}
+      {btn('↓', !hasNext, onNext, tr('Successivo'))}
+    </div>
+  );
+}
+
 // Value + small unit + caption, as used all over the design.
 function Stat({ v, unit, label, size = 22, color, align }) {
   const t = useT();
@@ -226,7 +268,11 @@ function Stat({ v, unit, label, size = 22, color, align }) {
 }
 
 function Grid({ cols = 3, children, style }) {
-  return <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: '16px 8px', ...style }}>{children}</div>;
+  const [ref, w] = useWidth();
+  // A testo grande su schermo stretto le colonne diventavano troppo piccole: le riduciamo in base
+  // alla larghezza reale del contenitore (clientWidth, non affetto dallo zoom del testo).
+  const n = Math.max(1, Math.min(cols, Math.floor((w / (window.TM_TEXT_SCALE || 1)) / 100)));
+  return <div ref={ref} style={{ display: 'grid', gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, gap: '16px 8px', ...style }}>{children}</div>;
 }
 
 function Divider() {
@@ -587,8 +633,32 @@ const TABS = [
   { id: 'more',    label: tr('Altro'),       d: ICONS.more },
 ];
 
-function TabBar({ active, onChange }) {
+function TabBar({ active, onChange, side }) {
   const t = useT();
+  if (side) {
+    return (
+      <nav aria-label={tr('Navigazione principale')} style={{
+        width: 230, flex: 'none', height: '100%', boxSizing: 'border-box', overflowY: 'auto',
+        background: t.bar, borderRight: `0.5px solid ${t.line}`, fontFamily: FONT,
+        display: 'flex', flexDirection: 'column', gap: 2,
+        padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 10px 16px',
+      }}>
+        {TABS.map(tab => {
+          const on = tab.id === active;
+          return (
+            <button key={tab.id} type="button" aria-current={on ? 'page' : undefined} onClick={() => onChange(tab.id)} style={{
+              minHeight: 46, display: 'flex', alignItems: 'center', gap: 12, padding: '0 14px', borderRadius: 12,
+              font: 'inherit', background: on ? t.blueBg : 'none', border: 0, color: on ? t.blue : t.text,
+              fontSize: 15, fontWeight: on ? 600 : 500, cursor: 'pointer',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab.id === 'more' ? 3.2 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}><path d={tab.d}/></svg>
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    );
+  }
   return (
     <nav aria-label={tr('Navigazione principale')} style={{
       position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, background: t.bar,
@@ -617,7 +687,7 @@ function TabBar({ active, onChange }) {
 Object.assign(window, {
   fmtN, fmtMoney, CUR, fmtMin, hhmm, dayLabel, dayShort, sinceLabel, agoLabel, linFit,
   PERIOD_KINDS, periodRange, inPeriod, PeriodBar,
-  Screen, CarSwitch, Title, Card, CardHead, BackLink, Stat, Grid, Divider, Seg, Chips, Bar, SocBar, Row, ListCard,
-  SectionLabel, useWidth, LineChart, Scatter, AxisLabels, OsmMap, HistoryLoading, ErrorBanner, Empty,
+  Screen, CarSwitch, Title, Card, CardHead, BackLink, NavArrows, Stat, Grid, Divider, Seg, Chips, Bar, SocBar, Row, ListCard,
+  SectionLabel, useWidth, useLayout, LineChart, Scatter, AxisLabels, OsmMap, HistoryLoading, ErrorBanner, Empty,
   ICONS, TABS, TabBar,
 });
