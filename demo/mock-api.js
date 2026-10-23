@@ -194,9 +194,9 @@ const strip = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => !k.sta
 // TM_MOCK_CARS=2 adds a second, newer car (to try the car choice in Altro → Questo dispositivo).
 const CARS = [
   { car_id: 1, name: 'Silver Arrow', model: '3', trim: '74D', vin: '5YJ3E7EB0LF000001', seed: 42, odo0: 24300, charging: true },
-  { car_id: 2, name: 'Red Comet', model: 'Y', trim: '74D', vin: '7SAYGDEE0PF000002', seed: 7, odo0: 3100, charging: false },
+  { car_id: 2, name: 'Red Comet', model: 'Y', trim: '74D', vin: '7SAYGDEE0PF000002', seed: 7, odo0: 3100, charging: false, trunkOpen: true }, // shows the warnings
 ];
-const UNITS = { unit_of_length: 'km', unit_of_temperature: 'C' };
+const UNITS = { unit_of_length: 'km', unit_of_temperature: 'C', unit_of_pressure: 'bar' };
 const DATA = {};
 
 // → JSON-able response for /api/v1/... or null (404)
@@ -214,11 +214,13 @@ function raw(url) {
   const D = DATA[C.car_id], km = D.last.odo, CAR = { car_id: C.car_id, car_name: C.name };
   if (p === 'cars/1/status') return { data: { car: CAR, units: UNITS, status: {
     display_name: CAR.car_name, state: C.charging ? 'charging' : 'asleep', state_since: iso(D.now - 47 * 60000), odometer: round(km, 1),
-    car_status: { healthy: true, locked: true, sentry_mode: false, windows_open: false, doors_open: false, trunk_open: false, frunk_open: false, is_user_present: false },
+    car_status: { healthy: true, locked: true, sentry_mode: false, windows_open: false, doors_open: false, trunk_open: !!C.trunkOpen, frunk_open: false, is_user_present: false },
     car_details: { model: C.model, trim_badging: C.trim },
     car_geodata: { geofence: 'Home', location: { latitude: P.home.lat, longitude: P.home.lng }, latitude: P.home.lat, longitude: P.home.lng },
-    car_versions: { version: D.updates[0].version, update_available: false, update_version: '' },
+    car_versions: { version: D.updates[0].version, update_available: !!C.trunkOpen, update_version: C.trunkOpen ? '2026.38.6' : '' },
     driving_details: { shift_state: '', power: 0, speed: 0, heading: 0, elevation: P.home.elev },
+    tpms_details: { tpms_pressure_fl: 2.9, tpms_pressure_fr: 2.875, tpms_pressure_rl: C.trunkOpen ? 2.45 : 2.9, tpms_pressure_rr: 2.9,
+      tpms_soft_warning_fl: false, tpms_soft_warning_fr: false, tpms_soft_warning_rl: !!C.trunkOpen, tpms_soft_warning_rr: false },
     climate_details: { is_climate_on: false, inside_temp: round(D.last.temp + 3, 1), outside_temp: round(D.last.temp, 1), is_preconditioning: false },
     battery_details: { est_battery_range: 0, rated_battery_range: round(D.last.soc * RANGE0 * D.last.health / 100, 1), ideal_battery_range: round(D.last.soc * RANGE0 * D.last.health / 100, 1), battery_level: D.last.soc, usable_battery_level: D.last.soc },
     charging_details: { plugged_in: C.charging, charging_state: C.charging ? 'Charging' : 'Disconnected', charge_energy_added: 8.4, charge_limit_soc: 80, charge_port_door_open: true,
@@ -256,8 +258,9 @@ function imperial(r) {
     for (const p of x.drive_details || []) { mi(p, 'odometer'); p.speed = Math.round(p.speed * KM); }
   };
   const charge = (x) => { ranges(x); mi(x, 'odometer'); fa(x, 'outside_temp_avg'); for (const p of x.charge_details || []) fa(p, 'outside_temp'); };
-  if (d.units) d.units = { ...d.units, unit_of_length: 'mi', unit_of_temperature: 'F' };
-  if (d.status) { mi(d.status, 'odometer'); mi(d.status.battery_details, 'est_battery_range', 'rated_battery_range', 'ideal_battery_range'); fa(d.status.climate_details, 'inside_temp', 'outside_temp'); }
+  if (d.units) d.units = { ...d.units, unit_of_length: 'mi', unit_of_temperature: 'F', ...(d.units.unit_of_pressure ? { unit_of_pressure: 'psi' } : {}) };
+  if (d.status) { mi(d.status, 'odometer'); mi(d.status.battery_details, 'est_battery_range', 'rated_battery_range', 'ideal_battery_range'); fa(d.status.climate_details, 'inside_temp', 'outside_temp');
+    for (const k of ['fl', 'fr', 'rl', 'rr']) { const t = d.status.tpms_details; if (t) t[`tpms_pressure_${k}`] = round(t[`tpms_pressure_${k}`] * 14.5038, 1); } }
   (d.drives || []).forEach(drive); if (d.drive) drive(d.drive);
   (d.charges || []).forEach(charge); if (d.charge) charge(d.charge);
   if (d.battery_health) mi(d.battery_health, 'max_range', 'current_range');

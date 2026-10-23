@@ -1,7 +1,7 @@
 // Altro + Salute batteria + Luoghi + Aggiornamenti
 // (spec: docs/design/screens/09-altro.html, 10-salute-batteria.html)
 
-const APP_VERSION = '0.8.1';
+const APP_VERSION = '0.9.0';
 const fmtDate = (iso) => { if (!iso) return '—'; const d = new Date(iso); return `${d.getDate()} ${MESI3[d.getMonth()]} ${d.getFullYear()}`; };
 
 function MoreScreen({ api, open, pending, onPrefChange }) {
@@ -38,6 +38,7 @@ function MoreScreen({ api, open, pending, onPrefChange }) {
         <PrefRow onChange={onPrefChange} label={tr('Formato dei numeri')} pref="numbers" options={[{ value: 'auto', label: 'Auto' },
           { value: 'comma', label: '1.234,5' }, { value: 'dot', label: '1,234.5' }, { value: 'space', label: '1 234,5' }]}/>
         <PrefRow onChange={onPrefChange} label={tr("Formato dell'ora")} pref="clock" options={[{ value: 'auto', label: 'Auto' }, { value: '24', label: '24 h' }, { value: '12', label: '12 h' }]}/>
+        <TextSizeRow/>
         <PrefRow onChange={onPrefChange} label={tr('Tema')} pref="theme" options={[{ value: 'auto', label: 'Auto' }, { value: 'light', label: tr('Chiaro') }, { value: 'dark', label: tr('Scuro') }]} last/>
       </ListCard>
       <p style={{ margin: '4px 16px', fontSize: 13, lineHeight: 1.4, color: t.sub }}>
@@ -50,7 +51,8 @@ function MoreScreen({ api, open, pending, onPrefChange }) {
         <Row label="TeslaMateAPI" value={<span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: conn[1] }}><span style={{ width: 8, height: 8, borderRadius: 4, background: conn[1] }}/>{conn[0]}</span>}/>
         <Row label={tr('Ultimo aggiornamento')} value={last}/>
         <Row label={tr('Aggiorna ora')} value={api.status === 'loading' || api.historyStatus === 'loading' ? tr('in corso…') : ''} valueColor={t.blue} onClick={api.refresh}/>
-        <Row label={tr('Aggiornamento automatico')} value={cfg.refreshSeconds > 0 ? tr('ogni {n} s', { n: cfg.refreshSeconds }) : tr('spento')}/>
+        <Row label={tr('Aggiornamento automatico')} value={cfg.refreshSeconds > 0 ? tr('ogni {n} s', { n: cfg.refreshSeconds }) : tr('spento')}
+          sub={cfg.refreshSeconds > 15 ? tr('{n} s in viaggio o in carica', { n: 15 }) : null}/>
         <Row label={tr('Installazione')} value={standalone ? tr('Sulla schermata Home') : tr('Nel browser')}/>
         <Row label={tr('Versione app')} value={APP_VERSION} last/>
       </ListCard>
@@ -69,8 +71,68 @@ function PrefRow({ label, pref, options, last, onChange }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0', borderBottom: last ? 'none' : `0.5px solid ${t.line}` }}>
       <div style={{ fontSize: 16 }}>{label}</div>
-      {React.createElement(options.length > 4 ? Chips : Seg, { small: true, label, options, value, // many cars: chips wrap
+      {/* chips wrap instead of truncating: many cars, or large text */}
+      {React.createElement(options.length > 5 || window.TM_TEXT_SCALE > 1.25 ? Chips : Seg, { small: true, label, options, value,
         onChange: (v) => { tmSetPref(pref, v); setValue(v); onChange(); } })}
+    </div>
+  );
+}
+
+// Text size: Auto, or a % on a slider (1% steps, magnets every 50%, − / + for the exact value).
+// While dragging only the sample grows (the page reflowing under the finger would move the slider away);
+// the whole app follows on release, at once.
+function TextSizeRow() {
+  const t = useT();
+  const max = tmTextMax();
+  const chosen = tmTextPct(tmPrefsNow().textSize);
+  const [manual, setManual] = React.useState(chosen != null);
+  const [v, setV] = React.useState(Math.round(window.TM_TEXT_SCALE * 100));
+  const latest = React.useRef(v); latest.current = v;
+  const clamp = (x) => Math.min(max, Math.max(TM_TEXT_MIN, Math.round(x)));
+  const snap = (x) => { const m = Math.round(x / 50) * 50; return Math.abs(x - m) <= 4 ? m : x; };
+  const apply = (x) => { x = clamp(x); setV(x); tmSetPref('textSize', String(x)); tmApplyText(); };
+  const mode = (m) => {
+    setManual(m === 'manual');
+    if (m === 'manual') return apply(v);
+    tmSetPref('textSize', null); setV(tmApplyText());
+  };
+  const shown = Math.min(v, max), f = (shown - TM_TEXT_MIN) / (max - TM_TEXT_MIN);
+  const step = (d, label) => (
+    <button type="button" aria-label={label} disabled={!manual || (d < 0 ? v <= TM_TEXT_MIN : v >= max)} onClick={() => apply(v + d)} style={{
+      width: 44, height: 44, flex: 'none', borderRadius: 22, border: 0, background: t.inset2, color: t.text, font: 'inherit',
+      fontSize: 24, lineHeight: 1, cursor: 'pointer', padding: 0, opacity: manual ? 1 : 0.4,
+    }}>{d < 0 ? '−' : '+'}</button>
+  );
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0', borderBottom: `0.5px solid ${t.line}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontSize: 16 }}>{tr('Dimensione testo')}</span>
+        <span data-text-size style={{ fontSize: 22, fontWeight: 700 }}>{shown}%</span>
+      </div>
+      <Seg small label={tr('Dimensione testo')} options={[{ value: 'auto', label: 'Auto' }, { value: 'manual', label: tr('Manuale') }]}
+        value={manual ? 'manual' : 'auto'} onChange={mode}/>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {step(-1, tr('Riduci'))}
+        <div style={{ flex: 1, minWidth: 0, position: 'relative', paddingBottom: 24 }}>
+          <input type="range" className="tm-slider" aria-label={tr('Dimensione testo')} min={TM_TEXT_MIN} max={max} step={1}
+            value={shown} disabled={!manual}
+            style={{ '--tm-fill': `${f * 100}%`, '--tm-on': t.blue, '--tm-off': t.track }}
+            onChange={(e) => setV(snap(+e.target.value))}
+            onPointerUp={() => apply(latest.current)} onTouchEnd={() => apply(latest.current)} onKeyUp={() => apply(latest.current)}/>
+          {[100, 150, 200, 250, 300].filter(m => m <= max).map(m => { // magnets; labels every 100%
+            const pos = `calc(18px + (100% - 36px) * ${(m - TM_TEXT_MIN) / (max - TM_TEXT_MIN)})`;
+            return (
+              <React.Fragment key={m}>
+                <span aria-hidden="true" style={{ position: 'absolute', left: pos, top: 44, width: 2, height: 6, marginLeft: -1, background: t.sub, borderRadius: 1 }}/>
+                {m % 100 === 0 && <span aria-hidden="true" style={{ position: 'absolute', left: pos, top: 51, transform: 'translateX(-50%)', fontSize: 11, color: t.sub }}>{m}%</span>}
+              </React.Fragment>
+            );
+          })}
+        </div>
+        {step(1, tr('Aumenta'))}
+      </div>
+      <div aria-hidden="true" style={{ fontSize: (17 * v) / Math.round(window.TM_TEXT_SCALE * 100), fontWeight: 600, overflow: 'hidden', whiteSpace: 'nowrap' }}>Aa 62 %</div>
+      {chosen > max && <div style={{ fontSize: 13, color: t.sub }}>{tr('Scelto {n}%: su questo schermo al massimo {m}%.', { n: chosen, m: max })}</div>}
     </div>
   );
 }

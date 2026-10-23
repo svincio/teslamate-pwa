@@ -32,7 +32,7 @@ window.TMConfig = {
   // endpoints AND the proxy doesn't already gate them). Leave empty otherwise.
   token: "",
 
-  // How often to poll the API while the app is open, in seconds.
+  // How often to poll the API while the app is open, in seconds (at most 15 while the car drives or charges).
   // Set to 0 to disable auto-refresh.
   refreshSeconds: 60,
 
@@ -49,6 +49,11 @@ window.TMConfig = {
 
   // Clock: "auto" (the device habit), "24" or "12" (AM/PM). Each device can override it in Altro/More → This device.
   clock: "auto",
+
+  // Text size: "auto" (on iPhone/iPad the system text size) or a percentage from 80 to 300, e.g. "130"
+  // (capped on narrow screens, about 195% on an iPhone held upright).
+  // Each device can override it in Altro/More → This device.
+  textSize: "auto",
 
 
   // Optional: price per kWh (in `currency`) used to estimate charge cost when TeslaMate's own cost

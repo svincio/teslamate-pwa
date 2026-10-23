@@ -160,6 +160,28 @@ function tmUnits() {
 const TRIMS = { '74D': 'Long Range AWD', '74': 'Long Range', '62': 'Mid Range', '50': 'Standard Range',
   'P74D': 'Performance', '57': 'Standard Range', 'P50D': 'Performance' };
 
+// What is open, in words (car_status from teslamateapi); single doors when known, else just "doors".
+function openings(cs) {
+  const doors = [['driver_front_door_open', 'Porta anteriore conducente'], ['driver_rear_door_open', 'Porta posteriore conducente'],
+    ['passenger_front_door_open', 'Porta anteriore passeggero'], ['passenger_rear_door_open', 'Porta posteriore passeggero']]
+    .filter(([k]) => pick(cs, k) === true).map(([, l]) => tr(l));
+  return [
+    ...(doors.length ? doors : pick(cs, 'doors_open') === true ? [tr('Porte')] : []),
+    ...(pick(cs, 'windows_open') === true ? [tr('Finestrini')] : []),
+    ...(pick(cs, 'trunk_open') === true ? [tr('Bagagliaio')] : []),
+    ...(pick(cs, 'frunk_open') === true ? [tr('Bagagliaio anteriore')] : []),
+  ];
+}
+
+// Tyre pressures (already in TeslaMate's unit: bar or psi) with the car's own soft warnings; null when not reported.
+function tyres(t, unit) {
+  const out = { unit: unit === 'psi' ? 'psi' : 'bar' };
+  for (const k of ['fl', 'fr', 'rl', 'rr']) {
+    out[k] = { v: safeNum(pick(t, `tpms_pressure_${k}`)), warn: pick(t, `tpms_soft_warning_${k}`) === true };
+  }
+  return ['fl', 'fr', 'rl', 'rr'].some(k => out[k].v > 0) ? out : null;
+}
+
 function normalizeCar(carRaw, statusRaw, fallback) {
   const carObj = pick(carRaw, 'car', 'cars.0') || carRaw || {};
   const s      = pick(statusRaw, 'status') || statusRaw || {};
@@ -216,7 +238,11 @@ function normalizeCar(carRaw, statusRaw, fallback) {
     vin,
     trim:        TRIMS[trim] || trim,
     locked:      !!pick(cstat, 'locked'),
+    open:        openings(cstat),
+    update:      pick(ver, 'update_available') === true ? (pick(ver, 'update_version') || '') : null, // version waiting to install
+    tyres:       tyres(pick(s, 'tpms_details') || {}, pick(statusRaw, 'units.unit_of_pressure')),
     stateSince:  pick(s, 'state_since') || null,
+    state:       tmState,
     lat:         safeNum(pick(geo, 'latitude', 'location.latitude')) || null,
     lng:         safeNum(pick(geo, 'longitude', 'location.longitude')) || null,
     geofence:    geofenceName || null,
@@ -638,6 +664,14 @@ function tmWriteCache(patch) {
 
 // ─── React hook ─────────────────────────────────────────────
 const HISTORY_MAX_AGE_MS = 30 * 60 * 1000;
+const ACTIVE_REFRESH_S = 15; // driving or charging: speed, power and battery change by the second
+
+// Seconds to the next /status: config.js refreshSeconds, at most 15 while the car drives or charges.
+function tmRefreshSeconds(base) {
+  const c = window.TM_CAR || {};
+  const active = c.state === 'driving' || c.state === 'charging' || !!(c.charging && c.charging.active);
+  return active ? Math.min(base, ACTIVE_REFRESH_S) : base;
+}
 
 function useTeslaMate() {
   const { useState, useEffect, useCallback, useRef } = React;
@@ -701,20 +735,28 @@ function useTeslaMate() {
     }
   }, []);
 
+  const refreshOldHistory = () => { if (Date.now() - historyAt.current > HISTORY_MAX_AGE_MS) loadHistory(); };
+
   // Manual refresh / first load: both in parallel, each applied as soon as it lands.
   const refresh = useCallback(() => Promise.all([loadCar(), loadHistory()]), [loadCar, loadHistory]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  // Periodic refresh: only the cheap /status; history at most every 30 min.
+  // Periodic refresh: only the cheap /status, faster while driving or charging; history at most every 30 min.
   useEffect(() => {
-    const secs = tmReadConfig().refreshSeconds;
-    if (!secs || secs <= 0) return;
-    const t = setInterval(() => {
-      loadCar();
-      if (Date.now() - historyAt.current > HISTORY_MAX_AGE_MS) loadHistory();
-    }, secs * 1000);
-    return () => clearInterval(t);
+    const base = tmReadConfig().refreshSeconds;
+    if (!base || base <= 0) return;
+    let t;
+    const schedule = () => { t = setTimeout(() => { loadCar(); refreshOldHistory(); schedule(); }, tmRefreshSeconds(base) * 1000); };
+    schedule();
+    return () => clearTimeout(t);
+  }, [loadCar, loadHistory]);
+
+  // Back in the foreground (iOS keeps a home-screen app suspended, timers included): refresh at once.
+  useEffect(() => {
+    const on = () => { if (document.visibilityState === 'visible') { loadCar(); refreshOldHistory(); } };
+    document.addEventListener('visibilitychange', on);
+    return () => document.removeEventListener('visibilitychange', on);
   }, [loadCar, loadHistory]);
 
   return { ...state, refresh };
@@ -739,7 +781,7 @@ async function tmProbe() {
 
 // ─── Expose ────────────────────────────────────────────────
 Object.assign(window, {
-  tmReadConfig, tmUnits, tmFetch, tmLoadCar, tmLoadHistory, tmProbe, loadChargeDetail, tmDrivesSince, tmLoadDrivesRange,
+  tmReadConfig, tmUnits, tmRefreshSeconds, tmFetch, tmLoadCar, tmLoadHistory, tmProbe, loadChargeDetail, tmDrivesSince, tmLoadDrivesRange,
 
   loadDriveDetail,
   useTeslaMate,
