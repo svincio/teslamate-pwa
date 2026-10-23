@@ -41,7 +41,7 @@ function StatsScreen({ api, metric, setMetric }) {
         <>
           <Card label={tr('Serie mensile')} style={{ padding: '14px 16px' }}>
             <Seg small label={tr('Metrica')} options={METRICS} value={m.value} onChange={setMetric}/>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <div style={{ fontSize: 13, color: t.sub }}>{m.kind}</div>
                 <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -0.5 }}>{m.money ? fmtMoney(tot) : <>{fmtN(m.sum ? tot : avg)} <span style={{ fontSize: 16, color: t.sub, fontWeight: 500 }}>{m.unit}</span></>}</div>

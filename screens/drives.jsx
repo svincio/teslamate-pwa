@@ -80,7 +80,7 @@ function DriveCard({ d, onClick }) {
       </div>
       <div style={{ fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.from} <span style={{ color: t.sub }}>→</span> {d.to}</div>
       <SocBar from={d.socFrom} to={d.socTo} accent={t.orange}/>
-      <div style={{ display: 'flex', gap: 16, fontSize: 14, color: t.sub }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', fontSize: 14, color: t.sub }}>
         <span><b style={{ color: t.text, fontWeight: 600 }}>{fmtN(d.distance || d.km, (d.distance || d.km) < 10 ? 1 : 0)}</b> {U.dist}</span>
         <span><b style={{ color: t.text, fontWeight: 600 }}>{fmtN(d.avgSpeed)}</b> {U.speed}</span>
         <span><b style={{ color: t.text, fontWeight: 600 }}>{d.eff ? fmtN(d.eff) : '—'}</b> {U.eff}</span>
@@ -228,9 +228,9 @@ function DriveDetail({ id, onBack }) {
           <Stat v={d.eff ? fmtN(d.eff) : '—'} unit={U.eff} label={tr('Consumo')}/>
           <Stat v={d.outsideTemp != null ? `${d.outsideTemp}°` : '—'} label={tr('Esterna')}/>
         </Grid>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderTop: `0.5px solid ${t.line}`, paddingTop: 14, marginTop: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, borderTop: `0.5px solid ${t.line}`, paddingTop: 14, marginTop: 16 }}>
           <span style={{ fontSize: 14, color: t.sub }}>{tr('Batteria')}</span>
-          <div style={{ flex: 1 }}><SocBar from={d.socFrom} to={d.socTo} accent={t.orange} big/></div>
+          <div style={{ flex: '1 1 160px' }}><SocBar from={d.socFrom} to={d.socTo} accent={t.orange} big/></div>
         </div>
       </Card>
 
