@@ -41,35 +41,77 @@ history. Keep both behind a VPN (Tailscale, WireGuard…) or an authenticating r
 
 Note: on iOS, HTTP Basic Auth works poorly with installed PWAs; a VPN is the smoothest option.
 
-## Install (Docker)
+## Deploy with Docker
 
-Image: `ghcr.io/svincio/teslamate-pwa` (amd64, arm64). Example service for a TeslaMate
-`docker-compose.yml` with Traefik, where TeslaMateAPI is already routed on `/api` of `${FQDN_TM}`:
+This PWA is an add-on to an existing TeslaMate installation: it needs TeslaMateAPI on the **same HTTPS host**.
+It does not run TeslaMate, PostgreSQL or TeslaMateAPI itself.
 
-```yaml
-  pwa:
-    image: ghcr.io/svincio/teslamate-pwa:latest
-    restart: always
-    # Optional: your own settings
-    # volumes:
-    #   - ./pwa-config.js:/usr/share/nginx/html/pwa/config.js:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pwa.rule=Host(`${FQDN_TM}`) && (Path(`/pwa`) || PathPrefix(`/pwa/`))"
-      - "traefik.http.routers.pwa.entrypoints=websecure"
-      - "traefik.http.routers.pwa.tls.certresolver=tmhttpchallenge"
-      - "traefik.http.services.pwa.loadbalancer.server.port=80"
+### 1. Check TeslaMateAPI
+
+From the host (or in a browser), confirm that TeslaMateAPI is reachable before deploying the PWA:
+
+```bash
+curl -fsS https://teslamate.example.com/api/v1/cars
 ```
 
-Adapt `entrypoints`, `certresolver` and any auth middleware to your setup. With another reverse
-proxy (nginx, Caddy…) just forward `/pwa/` to the container's port 80 without stripping the prefix.
+It must return JSON. Do not expose this endpoint publicly unless it is protected: the PWA is read-only but shows
+location and history.
 
-Then open `https://<your-host>/pwa/` on the phone and add it to the home screen
-(Safari: Share → **Add to Home Screen**).
+### 2. Add the PWA service
 
-Without Docker: serve the files of this repository under `/pwa/` with any web server
-(see `nginx.conf`). There is no build step.
+Create a `pwa-config.js` next to your existing `compose.yaml` and copy the repository's
+[`config.js`](config.js) into it. Normally the defaults are enough: keep `apiBase: "/api/v1"` and leave
+`token` empty. It is a public browser file: **never put a secret in it**.
 
+Add this service to the same Compose project that owns your reverse proxy. Replace the Traefik labels with
+the equivalent configuration for nginx, Caddy or another proxy if necessary.
+
+```yaml
+services:
+  pwa:
+    # Pin a published version for predictable upgrades; see GitHub Releases for the current version.
+    image: ghcr.io/svincio/teslamate-pwa:0.11.1
+    restart: unless-stopped
+    volumes:
+      - ./pwa-config.js:/usr/share/nginx/html/pwa/config.js:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.teslamate-pwa.rule=Host(`teslamate.example.com`) && (Path(`/pwa`) || PathPrefix(`/pwa/`))"
+      - "traefik.http.routers.teslamate-pwa.entrypoints=websecure"
+      - "traefik.http.routers.teslamate-pwa.tls=true"
+      - "traefik.http.services.teslamate-pwa.loadbalancer.server.port=80"
+```
+
+For another reverse proxy, forward **`/pwa/` without stripping the prefix** to port 80 of the container.
+The PWA and TeslaMateAPI must remain on one origin, for example:
+
+```text
+https://teslamate.example.com/pwa/       → PWA container
+https://teslamate.example.com/api/v1/... → TeslaMateAPI
+```
+
+### 3. Start and install
+
+```bash
+docker compose pull pwa
+docker compose up -d pwa
+docker compose logs --tail=30 pwa
+```
+
+Open `https://teslamate.example.com/pwa/` and add it to the phone home screen
+(Safari: Share → **Add to Home Screen**). The container serves only `/pwa/`; the proxy must provide HTTPS.
+
+### Update and rollback
+
+Published versions are listed in [GitHub Releases](https://github.com/svincio/teslamate-pwa/releases) and
+have matching GHCR tags (`0.11.1`, `0.11.0`, …). Change the image tag in Compose, then run the two commands
+above. To roll back, pin the previous release tag and run them again. `:latest` follows `main` and is suitable
+only if you explicitly want automatic feature updates.
+
+Image: `ghcr.io/svincio/teslamate-pwa` (linux/amd64 and linux/arm64).
+
+Without Docker, serve the files under `/pwa/` with any web server (see `nginx.conf`). A production deployment
+must run `npm ci && npm run build` and serve `dist/`, rather than compiling JSX in the browser.
 ## Configuration
 
 Copy [`config.js`](config.js), edit it and mount it as shown above:
@@ -101,6 +143,23 @@ Better: set the cost per kWh in TeslaMate's geofences, it is then used by Grafan
 - Maps use standard OpenStreetMap tiles.
 
 Third parties contacted by the browser: unpkg.com (libraries) and tile.openstreetmap.org (maps).
+
+## Releases (maintainers)
+
+A GitHub Release is created only from a signed version tag pushed by a maintainer. The same tag publishes
+matching multi-architecture GHCR images (for example `0.12.0`) and generated release notes.
+
+After merging a release branch to `main`, update `APP_VERSION` and the service-worker cache, then:
+
+```bash
+git switch main
+git pull --ff-only
+git tag -s v0.12.0 -m "TeslaMate PWA 0.12.0"
+git push origin v0.12.0
+```
+
+The `docker` workflow builds the image first and then creates the GitHub Release. It does not run for ordinary
+pushes to `main`; those update only the `latest` and SHA image tags.
 
 ## Development
 
