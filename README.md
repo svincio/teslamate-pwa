@@ -36,7 +36,7 @@ commands to the car.
 ## ⚠️ Security
 
 The app has **no login**. Anyone who can reach `/pwa/` and `/api/v1/` sees your car's location and
-history. Keep both behind a VPN (Tailscale, WireGuard…) or an authenticating reverse proxy.
+history. Keep both behind a VPN or an authenticating reverse proxy.
 `config.js` is a public file: never put secrets in it (see `token` below).
 
 Note: on iOS, HTTP Basic Auth works poorly with installed PWAs; a VPN is the smoothest option.
